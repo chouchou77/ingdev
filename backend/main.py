@@ -22,8 +22,8 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 app = FastAPI(
-    title="CATNAT Algeria v6.0 - RPA 99/2003 + Cahier de Charge",
-    description="نسخة إنتاجية كاملة مع الامتثال الصارم لـ RPA 99/2003 Confined Masonry",
+    title="CATNAT Algérie v6.0 - RPA 99/2003 + Cahier des Charges",
+    description="Version de production intégrale avec conformité RPA 99/2003 Maçonnerie Chaînée",
     version="6.0.0"
 )
 
@@ -51,17 +51,16 @@ for path in MODEL_PATHS:
     if os.path.exists(path):
         try:
             model.load_model(path)
-            logger.info(f"✅ CatBoost model loaded successfully from: {path}")
+            logger.info(f"✅ Modèle CatBoost chargé avec succès depuis: {path}")
             model_loaded = True
             break
         except Exception as e:
-            logger.error(f"❌ Failed to load model from {path}: {str(e)}")
+            logger.error(f"❌ Échec du chargement du modèle depuis {path}: {str(e)}")
 
 if not model_loaded:
-    logger.warning("⚠️ Model file not found! Predictions using fallback logic.")
+    logger.warning("⚠️ Fichier modèle non trouvé! Prédictions utilisant la logique de secours.")
 
 # ====================== DATA & DB ======================
-# All 58 Wilayas of Algeria
 VALID_WILAYAS = {
     "ADRAR", "CHLEF", "LAGHOUAT", "OUM EL BOUAGHI", "BATNA", "BEJAIA", "BISKRA", 
     "BECHAR", "BLIDA", "BOUIRA", "TAMANRASSET", "TEBESSA", "TLEMCEN", "TIARET", 
@@ -75,7 +74,6 @@ VALID_WILAYAS = {
     "DJANET", "IN SALAH", "IN GUEZZAM"
 }
 
-# Portfolio Management (Expand logic)
 portfolio_db = {
     "BLIDA": {"total_capital": 4500000000, "threshold": 5000000000},
     "JIJEL": {"total_capital": 1200000000, "threshold": 2000000000},
@@ -90,7 +88,7 @@ def fuzzy_match(value: str, valid_set: set, field_name: str) -> str:
         return upper
     matches = difflib.get_close_matches(upper, list(valid_set), n=1, cutoff=0.65)
     if matches:
-        logger.warning(f"🔄 Fuzzy matched {field_name}: '{value}' → '{matches[0]}'")
+        logger.warning(f"🔄 Correspondance floue {field_name}: '{value}' → '{matches[0]}'")
         return matches[0]
     return upper
 
@@ -100,51 +98,46 @@ def rpa_validation_service(data) -> Tuple[bool, Dict]:
     violations: List[str] = []
     major_violations: List[str] = []
 
-    # Map risk_level to seismic zone if not provided
     zone = data.seismic_zone
     if not zone:
         if data.risk_level >= 0.35: zone = 3
         elif data.risk_level >= 0.20: zone = 2
         else: zone = 1
 
-    # Height & Floors
     max_floors = {1: 5, 2: 4, 3: 3}.get(zone, 4)
     max_height = {1: 17, 2: 14, 3: 11}.get(zone, 14)
 
     if data.nb_floors > max_floors:
-        major_violations.append(f"عدد الطوابق ({data.nb_floors}) > {max_floors} في Zone {zone}")
+        major_violations.append(f"Nombre d'étages ({data.nb_floors}) > {max_floors} en Zone {zone}")
     if data.height_m > max_height:
-        major_violations.append(f"الارتفاع ({data.height_m}m) > {max_height}m في Zone {zone}")
+        major_violations.append(f"Hauteur ({data.height_m}m) > {max_height}m en Zone {zone}")
 
-    # Chapitre IX - Confined Masonry (Only check if values are provided > 0)
     if data.trumeau_area_m2 > 20:
-        major_violations.append(f"مساحة الطروموات ({data.trumeau_area_m2}m²) > 20m²")
+        major_violations.append(f"Surface des trumeaux ({data.trumeau_area_m2}m²) > 20m²")
     
     if data.distance_between_columns_m > 5:
-        major_violations.append(f"المسافة بين الأعمدة ({data.distance_between_columns_m}m) > 5m")
+        major_violations.append(f"Distance entre colonnes ({data.distance_between_columns_m}m) > 5m")
 
-    # Slenderness Ratio
     limit = 40 if data.brick_type == "solid" else 25
     if data.diagonal_wall_length > 0 and data.wall_thickness_cm > 0:
         if data.diagonal_wall_length > limit * (data.wall_thickness_cm / 100):
-            major_violations.append(f"نسبة النحافة (Slenderness) تجاوزت الحد ({limit}× السمك)")
+            major_violations.append(f"Élancement du mur dépasse la limite ({limit}× l'épaisseur)")
 
-    # Reinforcement (Check only if provided)
     if data.longitudinal_reinforcement_bars > 0:
         if data.longitudinal_reinforcement_bars < 4 or data.rebar_diameter_mm < 10:
-            major_violations.append("تسليح طولي غير كافٍ (Min 4 HA 10)")
+            major_violations.append("Armature longitudinale insuffisante (Min 4 HA 10)")
 
     if 0 < data.wall_thickness_cm < 20:
-        major_violations.append(f"سمك الجدار ({data.wall_thickness_cm}cm) < 20cm")
+        major_violations.append(f"Épaisseur du mur ({data.wall_thickness_cm}cm) < 20cm")
     
     if 0 < data.wall_density_ratio < 0.04:
-        major_violations.append(f"كثافة الجدران < 4%")
+        major_violations.append(f"Densité des murs < 4%")
     
     if data.openings_ratio > 0.5:
-        violations.append(f"نسبة الفتحات > 50%")
+        violations.append(f"Ratio d'ouvertures > 50%")
     
     if zone == 3 and not data.has_rc_encadrement and data.openings_ratio > 0:
-        major_violations.append("في Zone III يجب وضع إطار خرساني مسلح (RC Encadrement)")
+        major_violations.append("En Zone III, un encadrement en béton armé est obligatoire pour les ouvertures")
 
     is_compliant = len(major_violations) == 0
 
@@ -159,11 +152,9 @@ def rpa_validation_service(data) -> Tuple[bool, Dict]:
     return is_compliant, report
 
 def check_portfolio_concentration(wilaya: str, capital: float) -> Dict:
-    """تحقق التركيز في المحفظة (Cahier de Charge)"""
     w_upper = wilaya.upper()
     if w_upper not in portfolio_db:
-        # Default safety logic for untracked wilayas
-        return {"warning": False, "note": "داخل حدود مخاطر المحفظة"}
+        return {"warning": False, "note": "Dans les limites de risque du portefeuille"}
     
     current = portfolio_db[w_upper]["total_capital"] + capital
     threshold = portfolio_db[w_upper]["threshold"]
@@ -172,9 +163,9 @@ def check_portfolio_concentration(wilaya: str, capital: float) -> Dict:
         return {
             "warning": True,
             "sur_concentration": True,
-            "note": f"تركيز مرتفع في {w_upper} - تجاوز {current/1e9:.1f} مليار دج"
+            "note": f"Forte concentration à {w_upper} - Dépassement {current/1e9:.1f} Milliards DZD"
         }
-    return {"warning": False, "note": "تمركز المحفظة سليم"}
+    return {"warning": False, "note": "Concentration du portefeuille saine"}
 
 def monte_carlo_service(capital: float, risk_level: float, v_factor: float, seismic_zone: Optional[int] = None, iterations: int = 10000) -> Dict:
     if seismic_zone is None:
@@ -193,7 +184,7 @@ def monte_carlo_service(capital: float, risk_level: float, v_factor: float, seis
         "PML_95": round(float(np.percentile(losses, 95)), 2),
         "PML_99": round(float(np.percentile(losses, 99)), 2),
         "Max_Loss": round(float(np.max(losses)), 2),
-        "Note": f"منهجية مونتي كارلو ({iterations:,} سيناريو) | المنطقة {seismic_zone}"
+        "Note": f"Méthodologie Monte Carlo ({iterations:,} scénarios) | Zone {seismic_zone}"
     }
 
 def ai_prediction_service(model, data, is_compliant: bool, r_factor: float = 2.5) -> float:
@@ -201,7 +192,6 @@ def ai_prediction_service(model, data, is_compliant: bool, r_factor: float = 2.5
     v_val = 1.5 if "ind" in data.risk_type.lower() else 1.0
     
     if not model_loaded:
-        # Robust Fallback
         base_index = (a_val * 1000) * v_val
         if not is_compliant: base_index *= 1.3
         return min(max(base_index, 50), 550)
@@ -221,7 +211,7 @@ def ai_prediction_service(model, data, is_compliant: bool, r_factor: float = 2.5
         raw_pred = model.predict(input_df)[0]
         risk_index = raw_pred * (229 / 80) * (1 / r_factor)
     except Exception as e:
-        logger.error(f"Prediction logic error: {e}")
+        logger.error(f"Erreur logique de prédiction: {e}")
         risk_index = 280.0 
         
     if not is_compliant:
@@ -238,12 +228,8 @@ class ContractInput(BaseModel):
     risk_level: float = Field(..., ge=0, le=5)
     nb_floors: int = Field(2, gt=0)
     height_m: float = Field(6.0, gt=0)
-
-    # Optional fields for backward compatibility and flexibility
     seismic_zone: Optional[int] = Field(None)
     a_factor: Optional[float] = Field(None)
-
-    # RPA 99 Optional structural fields
     trumeau_area_m2: Optional[float] = 0.0
     distance_between_columns_m: Optional[float] = 0.0
     diagonal_wall_length: Optional[float] = 0.0
@@ -260,13 +246,13 @@ class ContractInput(BaseModel):
     @field_validator('wilaya')
     @classmethod
     def validate_wilaya(cls, v: str) -> str:
-        return fuzzy_match(v, VALID_WILAYAS, "الولاية")
+        return fuzzy_match(v, VALID_WILAYAS, "la wilaya")
 
 # ====================== ENDPOINTS ======================
 
 @app.get("/")
 async def root():
-    return {"message": "CATNAT Algeria Unified API", "status": "Online"}
+    return {"message": "API Unifiée CATNAT Algérie", "status": "En ligne"}
 
 @app.post("/analyze_risk")
 async def analyze_risk(data: ContractInput):
@@ -277,13 +263,12 @@ async def analyze_risk(data: ContractInput):
         mc_results = monte_carlo_service(data.capital_assure, data.risk_level if data.risk_level < 1 else data.risk_level * 0.1, v_factor, data.seismic_zone)
         risk_index = ai_prediction_service(model, data, is_compliant)
 
-        # Recommendation Engine
         if risk_index > 400 or not is_compliant:
-            decision, color, note = "Refused (🔴)", "#FF4D4D", "مخالفة معايير RPA أو خطر مرتفع جداً"
+            decision, color, note = "Refusé (🔴)", "#FF4D4D", "Violation des normes RPA ou risque trop élevé"
         elif risk_index > 250:
-            decision, color, note = "Conditional (🟡)", "#FFD700", "قبول مشروط مع إعادة تأمين إلزامي"
+            decision, color, note = "Conditionnel (🟡)", "#FFD700", "Accord conditionnel avec réassurance obligatoire"
         else:
-            decision, color, note = "Accepted (🟢)", "#4CAF50", "مطابق للمعايير، العقد مقبول"
+            decision, color, note = "Accepté (🟢)", "#4CAF50", "Conforme aux normes, contrat accepté"
 
         return {
             "rpa_validation": rpa_report,
@@ -305,8 +290,8 @@ async def analyze_risk(data: ContractInput):
         }
 
     except Exception as e:
-        logger.error(f"Execution Error: {e}")
-        raise HTTPException(status_code=500, detail="Internal server error")
+        logger.error(f"Erreur d'exécution: {e}")
+        raise HTTPException(status_code=500, detail="Erreur interne du serveur")
 
 @app.post("/predict_ai")
 async def predict_ai(data: ContractInput):

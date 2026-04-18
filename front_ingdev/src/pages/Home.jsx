@@ -37,7 +37,6 @@ const Home = () => {
         const rows = text.split('\n').filter(line => line.trim() !== '').slice(1);
         const parsed = rows.map(row => {
           const cols = row.split(',');
-          // Structure: ID, WILLAYA_ID, COMMUNE_ID, COMMUNE, COMMUNE_ARABIC, RISK, CAPITAL_ASSURE
           const wId = parseInt(cols[1]);
           return {
             wilaya: wilayaIdNames[wId] || `Wilaya ${wId}`,
@@ -51,10 +50,9 @@ const Home = () => {
       });
   }, []);
 
-  // 1. Chart Data: Aggregate Capital by Risk Zone
   const zoneStats = useMemo(() => {
     const zones = {
-      '4.0': { label: 'Zone III (Severe)', total: 0 },
+      '4.0': { label: 'Zone III (Sévère)', total: 0 },
       '3.0': { label: 'Zone IIb', total: 0 },
       '2.0': { label: 'Zone IIa', total: 0 },
       '1.0': { label: 'Zone I', total: 0 },
@@ -75,7 +73,7 @@ const Home = () => {
     labels: Object.values(zoneStats).map(z => z.label),
     datasets: [
       {
-        label: 'Total Capital at Risk (Billion DZD)',
+        label: 'Capital Total à Risque (Milliards DZD)',
         data: Object.values(zoneStats).map(z => z.total / 1000000000),
         backgroundColor: ['#b91c1c', '#f97316', '#eab308', '#3b82f6', '#10b981'],
         borderRadius: 8,
@@ -83,7 +81,6 @@ const Home = () => {
     ],
   };
 
-  // 2. Table Data: Aggregate by Wilaya and Risk Categories
   const wilayaSummary = useMemo(() => {
     const summary = {};
     data.forEach(item => {
@@ -99,16 +96,10 @@ const Home = () => {
     return Object.values(summary).sort((a, b) => b.total - a.total);
   }, [data]);
 
-  // 3. Recommendations
   const recommendations = useMemo(() => {
     const totalCapital = data.reduce((acc, curr) => acc + curr.capital, 0);
-
-    // Calculate Weighted Average Risk Index
-    // Zones: 4.0, 3.0, 2.0, 1.0, 0.5
     const weightedSum = data.reduce((acc, curr) => acc + (curr.capital * curr.risk), 0);
     const weightedAvgRisk = totalCapital > 0 ? (weightedSum / totalCapital) : 0;
-
-    // Normalize to percentage (4.0 risk = 100%)
     const globalExposureScore = (weightedAvgRisk / 4.0) * 100;
 
     const topHighRiskCommunes = [...data]
@@ -129,8 +120,8 @@ const Home = () => {
   }, [data]);
 
   if (isLoading) return (
-    <div className="min-h-screen bg-slate-50 flex items-center justify-center">
-      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+    <div className="min-h-screen bg-black flex items-center justify-center">
+      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600"></div>
     </div>
   );
 
@@ -144,20 +135,20 @@ const Home = () => {
           <div className="flex flex-col md:flex-row justify-between items-end gap-8">
             <div className="max-w-3xl">
               <div className="flex items-center gap-3 mb-6">
-                <span className="px-3 py-1 bg-emerald-500/10 text-emerald-400 text-[10px] font-black rounded-full border border-emerald-500/20 uppercase tracking-widest">Live Portfolio Stats</span>
+                <span className="px-3 py-1 bg-emerald-500/10 text-emerald-400 text-[10px] font-black rounded-full border border-emerald-500/20 uppercase tracking-widest">Stats Portefeuille en Direct</span>
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
               </div>
-              <h1 className="text-5xl md:text-7xl font-black mb-6 tracking-tight leading-[0.9]">STRATEGIC <br /><span className="text-emerald-500">EXPOSURE</span> ANALYTICS</h1>
+              <h1 className="text-5xl md:text-7xl font-black mb-6 tracking-tight leading-[0.9]">ANALYSE <br /><span className="text-emerald-500">STRATÉGIQUE</span> D'EXPOSITION</h1>
               <p className="text-slate-400 font-medium text-lg leading-relaxed">
-                Real-time monitoring of insurance aggregation across Algerian seismic zones.
-                Integrating <span className="text-white font-bold">RPA 99/2003</span> technical standards with Monte Carlo catastrophe modeling.
+                Surveillance en temps réel de l'agrégation d'assurance à travers les zones sismiques algériennes.
+                Intégration des normes <span className="text-white font-bold">RPA 99/2003</span> avec modélisation catastrophe Monte Carlo.
               </p>
             </div>
             <div className="hidden lg:block">
               <div className="bg-white/5 backdrop-blur-md border border-white/10 p-6 rounded-3xl">
-                <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Portfolio Health</p>
-                <div className="text-3xl font-black text-emerald-400">OPTIMIZED</div>
-                <div className="text-[9px] text-slate-500 mt-1 uppercase font-bold tracking-tighter">Updated: {new Date().toLocaleDateString()}</div>
+                <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Santé du Portefeuille</p>
+                <div className="text-3xl font-black text-emerald-400">OPTIMISÉ</div>
+                <div className="text-[9px] text-slate-500 mt-1 uppercase font-bold tracking-tighter">Mis à jour: {new Date().toLocaleDateString('fr-FR')}</div>
               </div>
             </div>
           </div>
@@ -165,12 +156,11 @@ const Home = () => {
       </div>
 
       <main className="max-w-7xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-3 gap-8">
-
         <div className="lg:col-span-2 space-y-8">
           <div className="bg-white p-8 rounded-3xl shadow-sm border border-slate-100">
             <div className="flex justify-between items-center mb-8">
-              <h2 className="text-xl font-black text-slate-900 uppercase tracking-tighter">Aggregated Capital by Seismic Zone</h2>
-              <span className="px-3 py-1 bg-blue-50 text-blue-600 text-[10px] font-black rounded-full border border-blue-100 uppercase tracking-widest leading-none">Billion DZD</span>
+              <h2 className="text-xl font-black text-slate-900 uppercase tracking-tighter text-black">Capital Agrégé par Zone Sismique</h2>
+              <span className="px-3 py-1 bg-blue-50 text-blue-600 text-[10px] font-black rounded-full border border-blue-100 uppercase tracking-widest leading-none">Milliards DZD</span>
             </div>
             <div className="h-[400px]">
               <Bar
@@ -180,15 +170,8 @@ const Home = () => {
                   maintainAspectRatio: false,
                   plugins: { legend: { display: false } },
                   scales: {
-                    y: {
-                      beginAtZero: true,
-                      grid: { color: '#f1f5f9' },
-                      ticks: { font: { weight: 'bold' } }
-                    },
-                    x: {
-                      grid: { display: false },
-                      ticks: { font: { weight: 'bold' } }
-                    }
+                    y: { beginAtZero: true, grid: { color: '#f1f5f9' }, ticks: { font: { weight: 'bold' } } },
+                    x: { grid: { display: false }, ticks: { font: { weight: 'bold' } } }
                   }
                 }}
               />
@@ -197,7 +180,7 @@ const Home = () => {
 
           <div className="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden">
             <div className="p-8 border-b border-slate-50 flex justify-between items-center">
-              <h2 className="text-xl font-black text-slate-900 uppercase tracking-tighter">Tableau de bord des cumuls (Toutes les Wilayas)</h2>
+              <h2 className="text-xl font-black text-slate-900 uppercase tracking-tighter text-black">Tableau de bord des cumuls (Wwilayas)</h2>
               <div className="flex gap-2">
                 <span className="w-2 h-2 rounded-full bg-red-400"></span>
                 <span className="w-2 h-2 rounded-full bg-yellow-400"></span>
@@ -209,10 +192,10 @@ const Home = () => {
                 <thead className="bg-slate-50/50 text-[10px] font-black text-slate-400 uppercase tracking-widest">
                   <tr>
                     <th className="px-8 py-4">Wilaya</th>
-                    <th className="px-4 py-4 text-center">Low Risk (0-I)</th>
-                    <th className="px-4 py-4 text-center">Med Risk (IIa-IIb)</th>
-                    <th className="px-4 py-4 text-center">High Risk (III)</th>
-                    <th className="px-8 py-4 text-right">Total Aggregate</th>
+                    <th className="px-4 py-4 text-center">Risque Faible (0-I)</th>
+                    <th className="px-4 py-4 text-center">Risque Moyen (IIa-IIb)</th>
+                    <th className="px-4 py-4 text-center">Risque Élevé (III)</th>
+                    <th className="px-8 py-4 text-right">Agrégat Total</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-50">
@@ -236,16 +219,16 @@ const Home = () => {
         <div className="space-y-8">
           <div className="bg-slate-900 text-white p-8 rounded-[2.5rem] shadow-xl relative overflow-hidden group">
             <div className="relative z-10">
-              <p className="text-[10px] font-black text-blue-400 tracking-[0.3em] uppercase mb-4">Portfolio Risk Index</p>
+              <p className="text-[10px] font-black text-blue-400 tracking-[0.3em] uppercase mb-4">Indice de Risque Portefeuille</p>
               <div className="text-6xl font-black mb-4 group-hover:scale-105 transition-transform">{recommendations.ratio}%</div>
               <p className="text-xs text-slate-400 leading-relaxed font-medium">
-                Weighted average of capital exposure across all seismic risk levels.
-                (Current Avg: <span className="text-white">{recommendations.avgRisk}</span>)
+                Moyenne pondérée de l'exposition au capital à travers tous les niveaux de risque.
+                (Moyenne Actuelle: <span className="text-white">{recommendations.avgRisk}</span>)
               </p>
               <div className="mt-6 flex gap-2">
                 {parseInt(recommendations.ratio) > 50 ?
-                  <span className="bg-red-500/20 text-red-400 px-3 py-1 rounded-full text-[9px] font-black border border-red-500/20">🚨 OVEREXPOSED</span>
-                  : <span className="bg-emerald-500/20 text-emerald-400 px-3 py-1 rounded-full text-[9px] font-black border border-emerald-500/20">✅ HEALTHY</span>
+                  <span className="bg-red-500/20 text-red-400 px-3 py-1 rounded-full text-[9px] font-black border border-red-500/20">🚨 SUREXPOSÉ</span>
+                  : <span className="bg-emerald-500/20 text-emerald-400 px-3 py-1 rounded-full text-[9px] font-black border border-emerald-500/20">✅ SAIN</span>
                 }
               </div>
             </div>
@@ -257,52 +240,43 @@ const Home = () => {
           <div className="bg-white p-8 rounded-4xl shadow-sm border border-slate-100">
             <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest mb-8 flex items-center gap-3">
               <span className="w-1.5 h-6 bg-emerald-500 rounded-full"></span>
-              Portfolio Optimization
+              Optimisation Portefeuille
             </h3>
-
             <div className="space-y-8">
               <div>
                 <div className="flex items-center gap-2 text-emerald-600 mb-4">
                   <span className="text-lg">📈</span>
-                  <span className="text-[10px] font-black uppercase tracking-widest text-emerald-700">Recommended Growth</span>
+                  <span className="text-[10px] font-black uppercase tracking-widest text-emerald-700">Croissance Recommandée</span>
                 </div>
                 <ul className="space-y-3">
                   {recommendations.grow.length > 0 ? recommendations.grow.map((c, i) => (
                     <li key={i} className="bg-emerald-50/50 border border-emerald-100 p-3 rounded-2xl flex justify-between items-center group hover:bg-emerald-50 transition-colors">
                       <span className="text-xs font-bold text-slate-700">{c.commune}</span>
-                      <span className="text-[9px] font-black text-emerald-600 bg-white px-2 py-0.5 rounded-full border border-emerald-200">SAFE OPS</span>
+                      <span className="text-[9px] font-black text-emerald-600 bg-white px-2 py-0.5 rounded-full border border-emerald-200 uppercase">OPS SÛRE</span>
                     </li>
-                  )) : <li className="text-xs text-slate-400 italic">No low-risk opportunities identified.</li>}
+                  )) : <li className="text-xs text-slate-400 italic">Aucune opportunité à faible risque identifiée.</li>}
                 </ul>
               </div>
-
               <div>
                 <div className="flex items-center gap-2 text-red-600 mb-4">
                   <span className="text-lg">📉</span>
-                  <span className="text-[10px] font-black uppercase tracking-widest text-red-700">De-risking Necessary</span>
+                  <span className="text-[10px] font-black uppercase tracking-widest text-red-700">Désengagement Nécessaire</span>
                 </div>
                 <ul className="space-y-3">
                   {recommendations.stop.length > 0 ? recommendations.stop.map((c, i) => (
                     <li key={i} className="bg-red-50/50 border border-red-100 p-3 rounded-2xl flex justify-between items-center group hover:bg-red-50 transition-colors">
                       <div className="flex flex-col">
                         <span className="text-xs font-bold text-slate-700">{c.commune}</span>
-                        <span className="text-[9px] text-slate-400">Exposure: {(c.capital / 1000000).toFixed(1)}M</span>
+                        <span className="text-[9px] text-slate-400">Exposition: {(c.capital / 1000000).toFixed(1)}M</span>
                       </div>
-                      <span className="text-[9px] font-black text-red-600 bg-white px-2 py-0.5 rounded-full border border-red-200 uppercase">Cease Granting</span>
+                      <span className="text-[9px] font-black text-red-600 bg-white px-2 py-0.5 rounded-full border border-red-200 uppercase">CESSER</span>
                     </li>
-                  )) : <li className="text-xs text-slate-400 italic">No critical overexposure detected.</li>}
+                  )) : <li className="text-xs text-slate-400 italic">Aucune surexposition critique détectée.</li>}
                 </ul>
               </div>
             </div>
-
-            <div className="mt-10 pt-8 border-t border-slate-50">
-              <p className="text-[10px] text-slate-400 font-medium italic leading-relaxed">
-                *AI-driven recommendations based on RPA99 vulnerability mapping. Consult risk managers before adjusting underwriting rules.
-              </p>
-            </div>
           </div>
         </div>
-
       </main>
     </div>
   );

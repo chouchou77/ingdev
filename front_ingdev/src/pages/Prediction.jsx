@@ -4,11 +4,10 @@ const Prediction = () => {
     const [formData, setFormData] = useState({
         wilaya: '',
         commune: '',
-        buildingType: 'residential',
+        buildingType: 'résidentiel',
         floors: '2',
         height: '6',
         capital: '50000000',
-        // New RPA fields
         seismic_zone: '2',
         trumeau_area_m2: '15',
         distance_between_columns_m: '4',
@@ -17,7 +16,7 @@ const Prediction = () => {
         wall_density_ratio: '0.05',
         openings_ratio: '0.3',
         has_rc_encadrement: true,
-        brick_type: 'hollow',
+        brick_type: 'creuse',
         longitudinal_reinforcement_bars: '4',
         rebar_diameter_mm: '12',
         mortar_strength_mpa: '5',
@@ -76,7 +75,6 @@ const Prediction = () => {
 
             const communeData = allData.find(d => d.wilaya === formData.wilaya && d.commune === formData.commune);
             if (communeData) {
-                // Refined Zone mapping from RPA Standards
                 const zone = communeData.risk_level >= 4 ? '3' :
                     communeData.risk_level >= 2 ? '2' : '1';
 
@@ -86,8 +84,6 @@ const Prediction = () => {
                     capital: communeData.capital > 0 ? communeData.capital.toString() : prev.capital
                 }));
             }
-        } else {
-            setCommunes([]);
         }
     }, [formData.wilaya, formData.commune, allData]);
 
@@ -102,13 +98,12 @@ const Prediction = () => {
         const payload = {
             wilaya: formData.wilaya,
             commune: formData.commune,
-            risk_type: formData.buildingType === 'residential' ? 'Bien immobilier' :
-                formData.buildingType === 'industrial' ? 'Installation Industrielle' : 'Commercial',
+            risk_type: formData.buildingType === 'résidentiel' ? 'Bien immobilier' :
+                formData.buildingType === 'industriel' ? 'Installation Industrielle' : 'Commercial',
             capital_assure: parseFloat(formData.capital),
             risk_level: mappedRisk,
             nb_floors: parseInt(formData.floors),
             height_m: parseFloat(formData.height),
-            // New fields
             seismic_zone: parseInt(formData.seismic_zone),
             a_factor: mappedRisk,
             trumeau_area_m2: parseFloat(formData.trumeau_area_m2),
@@ -118,7 +113,7 @@ const Prediction = () => {
             wall_density_ratio: parseFloat(formData.wall_density_ratio),
             openings_ratio: parseFloat(formData.openings_ratio),
             has_rc_encadrement: formData.has_rc_encadrement,
-            brick_type: formData.brick_type,
+            brick_type: formData.brick_type === 'pleine' ? 'solid' : 'hollow',
             longitudinal_reinforcement_bars: parseInt(formData.longitudinal_reinforcement_bars),
             rebar_diameter_mm: parseFloat(formData.rebar_diameter_mm),
             mortar_strength_mpa: parseFloat(formData.mortar_strength_mpa),
@@ -132,11 +127,11 @@ const Prediction = () => {
                 body: JSON.stringify(payload),
             });
 
-            if (!response.ok) throw new Error('API request failed');
+            if (!response.ok) throw new Error('Échec de la requête API');
             const data = await response.json();
 
             setResult({
-                status: 'Success',
+                status: 'Succès',
                 score: data.ai_prediction.risk_index,
                 decision: data.ai_prediction.decision,
                 color: data.ai_prediction.color,
@@ -147,9 +142,9 @@ const Prediction = () => {
             });
             setIsSubmitting(false);
         } catch (error) {
-            console.error("Prediction failed:", error);
+            console.error("Échec de la prédiction:", error);
             setIsSubmitting(false);
-            alert("Connection error with backend.");
+            alert("Erreur de connexion avec le serveur.");
         }
     };
 
@@ -179,131 +174,110 @@ const Prediction = () => {
         <div className="min-h-screen bg-[#0a0a0c] text-slate-300 font-sans selection:bg-emerald-500/30">
             <main className="max-w-6xl mx-auto py-12 px-6">
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-
-                    {/* LEFT PANEL: FORM */}
                     <div className="lg:col-span-7 bg-slate-900/40 border border-white/5 rounded-[2.5rem] overflow-hidden backdrop-blur-md flex flex-col">
                         <div className="p-8 border-b border-white/5 bg-linear-to-r from-slate-900 to-black">
                             <h2 className="text-2xl font-black text-white flex items-center gap-3">
-                                <span className="text-emerald-500">⚙️</span> ADVANCED RISK ASSESSMENT
+                                <span className="text-emerald-500">⚙️</span> ÉVALUATION DES RISQUES
                             </h2>
-                            <p className="text-slate-400 text-xs mt-2 uppercase tracking-widest font-bold opacity-60">RPA 99/2003 Confined Masonry Framework</p>
+                            <p className="text-slate-400 text-xs mt-2 uppercase tracking-widest font-bold opacity-60">Cadre RPA 99/2003 Maçonnerie Chaînée</p>
                         </div>
-
-                        <div className="flex border-b border-white/5 bg-black/20">
-                            <button onClick={() => setActiveTab('basic')} className={`px-8 py-4 text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'basic' ? 'text-emerald-400 border-b-2 border-emerald-500 bg-emerald-500/5' : 'text-slate-500 hover:text-slate-300'}`}>Basic Data</button>
-                            <button onClick={() => setActiveTab('structural')} className={`px-8 py-4 text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'structural' ? 'text-emerald-400 border-b-2 border-emerald-500 bg-emerald-500/5' : 'text-slate-500 hover:text-slate-300'}`}>Structural Specs</button>
-                            <button onClick={() => setActiveTab('materials')} className={`px-8 py-4 text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'materials' ? 'text-emerald-400 border-b-2 border-emerald-500 bg-emerald-500/5' : 'text-slate-500 hover:text-slate-300'}`}>Materials & Rebar</button>
+                        <div className="flex border-b border-white/5 bg-linear-to-r from-slate-900 to-black text-white ">
+                            <button onClick={() => setActiveTab('basic')} className={`px-8 py-4 text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'basic' ? 'text-emerald-400 border-b-2 border-emerald-500 bg-emerald-500/5' : 'text-slate-500 hover:text-slate-300'}`}>Données de base</button>
+                            <button onClick={() => setActiveTab('structural')} className={`px-8 py-4 text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'structural' ? 'text-emerald-400 border-b-2 border-emerald-500 bg-emerald-500/5' : 'text-slate-500 hover:text-slate-300'}`}>Spécifications structurelles</button>
+                            <button onClick={() => setActiveTab('materials')} className={`px-8 py-4 text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'materials' ? 'text-emerald-400 border-b-2 border-emerald-500 bg-emerald-500/5' : 'text-slate-500 hover:text-slate-300'}`}>Matériaux & Armature</button>
                         </div>
-
                         <form onSubmit={handleSubmit} className="p-8 flex-1 overflow-y-auto max-h-[600px] custom-scrollbar">
                             {activeTab === 'basic' && (
                                 <div className="grid grid-cols-2 gap-6 animate-in fade-in duration-300">
                                     <div className="col-span-2 md:col-span-1">
-                                        <InputField label="Wilaya" name="wilaya" options={[{ value: '', label: 'Select Wilaya' }, ...wilayas.map(w => ({ value: w, label: w }))]} />
+                                        <InputField label="Wilaya" name="wilaya" options={[{ value: '', label: 'Sélectionner Wilaya' }, ...wilayas.map(w => ({ value: w, label: w }))]} />
                                     </div>
                                     <div className="col-span-2 md:col-span-1">
-                                        <InputField label="Commune" name="commune" options={[{ value: '', label: 'Select Commune' }, ...communes.map(c => ({ value: c, label: c }))]} />
+                                        <InputField label="Commune" name="commune" options={[{ value: '', label: 'Sélectionner Commune' }, ...communes.map(c => ({ value: c, label: c }))]} />
                                     </div>
-                                    <InputField label="Building Category" name="buildingType" options={[
-                                        { value: 'residential', label: 'Habitation / Units' },
-                                        { value: 'industrial', label: 'Industrial Complex' },
-                                        { value: 'office', label: 'Commercial / Office' }
+                                    <InputField label="Catégorie du bâtiment" name="buildingType" options={[
+                                        { value: 'résidentiel', label: 'Habitation / Logements' },
+                                        { value: 'industriel', label: 'Complexe Industriel' },
+                                        { value: 'bureau', label: 'Commercial / Bureaux' }
                                     ]} />
-                                    <InputField label="Seismic Zone (RPA)" name="seismic_zone" options={[
-                                        { value: '1', label: 'Zone I (Low)' },
-                                        { value: '2', label: 'Zone II (Medium)' },
-                                        { value: '3', label: 'Zone III (High)' }
+                                    <InputField label="Zone Sismique (RPA)" name="seismic_zone" options={[
+                                        { value: '1', label: 'Zone I (Faible)' },
+                                        { value: '2', label: 'Zone II (Moyenne)' },
+                                        { value: '3', label: 'Zone III (Élevée)' }
                                     ]} />
-                                    <InputField label="Number of Floors" name="floors" type="number" />
-                                    <InputField label="Total Height (m)" name="height" type="number" />
+                                    <InputField label="Nombre d'étages" name="floors" type="number" />
+                                    <InputField label="Hauteur Totale (m)" name="height" type="number" />
                                     <div className="col-span-2">
-                                        <InputField label="Capital Assured (DZD)" name="capital" type="number" />
+                                        <InputField label="Capital Assuré (DZD)" name="capital" type="number" />
                                     </div>
                                 </div>
                             )}
-
                             {activeTab === 'structural' && (
                                 <div className="grid grid-cols-2 gap-6 animate-in fade-in duration-300">
-                                    <InputField label="Trumeau Area (m²)" name="trumeau_area_m2" type="number" />
-                                    <InputField label="Distance between Columns (m)" name="distance_between_columns_m" type="number" />
-                                    <InputField label="Diagonal Wall Length (m)" name="diagonal_wall_length" type="number" />
-                                    <InputField label="Wall Thickness (cm)" name="wall_thickness_cm" type="number" />
-                                    <InputField label="Wall Density Ratio" name="wall_density_ratio" type="number" />
-                                    <InputField label="Openings Area Ratio" name="openings_ratio" type="number" />
+                                    <InputField label="Surface du trumeau (m²)" name="trumeau_area_m2" type="number" />
+                                    <InputField label="Distance entre colonnes (m)" name="distance_between_columns_m" type="number" />
+                                    <InputField label="Longueur diagonale du mur (m)" name="diagonal_wall_length" type="number" />
+                                    <InputField label="Épaisseur du mur (cm)" name="wall_thickness_cm" type="number" />
+                                    <InputField label="Ratio de densité des murs" name="wall_density_ratio" type="number" />
+                                    <InputField label="Ratio de surface d'ouvertures" name="openings_ratio" type="number" />
                                     <div className="col-span-2 flex items-center gap-4 bg-white/5 p-4 rounded-xl border border-white/10">
-                                        <input
-                                            type="checkbox"
-                                            checked={formData.has_rc_encadrement}
-                                            onChange={(e) => setFormData({ ...formData, has_rc_encadrement: e.target.checked })}
-                                            className="w-5 h-5 accent-emerald-500"
-                                        />
+                                        <input type="checkbox" checked={formData.has_rc_encadrement} onChange={(e) => setFormData({ ...formData, has_rc_encadrement: e.target.checked })} className="w-5 h-5 accent-emerald-500" />
                                         <div>
-                                            <p className="text-xs font-bold text-white">Has R.C Encadrement around openings?</p>
-                                            <p className="text-[10px] text-slate-500">Required for Zone III according to RPA Chapitre IX.</p>
+                                            <p className="text-xs font-bold text-white">Possède un encadrement B.A autour des ouvertures ?</p>
+                                            <p className="text-[10px] text-slate-500">Obligatoire pour la Zone III selon RPA Chapitre IX.</p>
                                         </div>
                                     </div>
                                 </div>
                             )}
-
                             {activeTab === 'materials' && (
                                 <div className="grid grid-cols-2 gap-6 animate-in fade-in duration-300">
-                                    <InputField label="Brick Type" name="brick_type" options={[
-                                        { value: 'hollow', label: 'Hollow Brick' },
-                                        { value: 'solid', label: 'Solid Brick' }
+                                    <InputField label="Type de brique" name="brick_type" options={[
+                                        { value: 'creuse', label: 'Brique Creuse' },
+                                        { value: 'pleine', label: 'Brique Pleine' }
                                     ]} />
-                                    <InputField label="Rebar Count (Longitudinal)" name="longitudinal_reinforcement_bars" type="number" />
-                                    <InputField label="Rebar Diameter (mm)" name="rebar_diameter_mm" type="number" />
-                                    <InputField label="Mortar Strength (MPa)" name="mortar_strength_mpa" type="number" />
-                                    <InputField label="Concrete Strength (MPa)" name="concrete_strength_mpa" type="number" />
+                                    <InputField label="Nombre de barres (Longitudinal)" name="longitudinal_reinforcement_bars" type="number" />
+                                    <InputField label="Diamètre des barres (mm)" name="rebar_diameter_mm" type="number" />
+                                    <InputField label="Résistance du mortier (MPa)" name="mortar_strength_mpa" type="number" />
+                                    <InputField label="Résistance du béton (MPa)" name="concrete_strength_mpa" type="number" />
                                 </div>
                             )}
-
-                            <button
-                                type="submit"
-                                disabled={isSubmitting}
-                                className="w-full mt-12 bg-emerald-600 hover:bg-emerald-500 text-white p-5 rounded-2xl font-black text-xs uppercase tracking-[0.2em] transition-all shadow-[0_0_40px_rgba(16,185,129,0.2)] disabled:bg-slate-800"
-                            >
-                                {isSubmitting ? 'CALCULATING ENGINE...' : 'GENERATE COMPREHENSIVE REPORT'}
+                            <button type="submit" disabled={isSubmitting} className="w-full mt-12 bg-emerald-600 hover:bg-emerald-500 text-white p-5 rounded-2xl font-black text-xs uppercase tracking-[0.2em] transition-all shadow-[0_0_40px_rgba(16,185,129,0.2)] disabled:bg-slate-800">
+                                {isSubmitting ? 'CALCUL DU MOTEUR...' : 'GÉNÉRER LE RAPPORT COMPLET'}
                             </button>
                         </form>
                     </div>
-
-                    {/* RIGHT PANEL: RESULTS */}
                     <div className="lg:col-span-5 space-y-6">
                         {!result ? (
                             <div className="h-full bg-slate-900/20 border border-white/5 border-dashed rounded-[2.5rem] flex flex-col items-center justify-center p-12 text-center opacity-40">
                                 <div className="text-6xl mb-6">📉</div>
-                                <h3 className="text-xl font-black text-white uppercase tracking-tighter">Waiting for Input</h3>
-                                <p className="text-sm text-slate-400 mt-2">Submit the form to generate AI-driven seismic vulnerability index and loss simulations.</p>
+                                <h3 className="text-xl font-black text-white uppercase tracking-tighter">En attente des données</h3>
+                                <p className="text-sm text-slate-400 mt-2">Soumettez le formulaire pour générer l'indice de vulnérabilité sismique IA et les simulations de pertes.</p>
                             </div>
                         ) : (
                             <div className="space-y-6 animate-in zoom-in-95 duration-500">
-                                {/* DECISION CARD */}
                                 <div className="bg-slate-900/60 border border-white/10 p-8 rounded-[2.5rem] shadow-2xl relative overflow-hidden">
                                     <div className="flex justify-between items-start relative z-10">
                                         <div>
-                                            <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Final Underwriting Decision</p>
+                                            <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Décision Finale de Souscription</p>
                                             <h2 className="text-4xl font-black" style={{ color: result.color }}>{result.decision}</h2>
                                         </div>
                                         <div className="text-right">
                                             <div className="text-5xl font-black text-white">{result.score}</div>
-                                            <p className="text-[9px] font-black text-emerald-500 uppercase tracking-tighter">AI RISK INDEX</p>
+                                            <p className="text-[9px] font-black text-emerald-500 uppercase tracking-tighter">INDICE DE RISQUE IA</p>
                                         </div>
                                     </div>
                                     <div className="mt-8 p-4 rounded-2xl bg-white/5 border border-white/5">
                                         <p className="text-[10px] text-slate-400 leading-relaxed font-medium">"{result.recommendation}"</p>
                                     </div>
-                                    <div className="absolute top-0 right-0 p-8 opacity-5 pointer-events-none">
+                                    <div className="absolute top-0 right-0 p-8 opacity-5 pointer-events-none text-white">
                                         <span className="text-8xl">⚖️</span>
                                     </div>
                                 </div>
-
-                                {/* RPA VALIDATION */}
                                 <div className="bg-slate-900/40 border border-white/5 p-6 rounded-3xl">
                                     <h4 className="text-[11px] font-black text-white uppercase tracking-widest mb-4 flex items-center justify-between">
-                                        RPA 99/2003 Compliance
+                                        Conformité RPA 99/2003
                                         <span className={`px-3 py-1 rounded-full text-[9px] border ${result.rpa.compliant ? 'bg-emerald-500/10 border-emerald-500/40 text-emerald-400' : 'bg-red-500/10 border-red-500/40 text-red-400'}`}>
-                                            {result.rpa.compliant ? 'PASSED' : 'FAILED'}
+                                            {result.rpa.compliant ? 'CONFORME' : 'NON-CONFORME'}
                                         </span>
                                     </h4>
                                     <div className="space-y-3">
@@ -314,18 +288,23 @@ const Prediction = () => {
                                         ))}
                                         {result.rpa.compliant && (
                                             <div className="text-[11px] text-emerald-400 bg-emerald-500/5 p-3 rounded-xl border border-emerald-500/10 flex gap-3">
-                                                <span>✅</span> All structural parameters are within RPA limits for Zone {formData.seismic_zone}.
+                                                <span>✅</span> Tous les paramètres structurels sont dans les limites RPA pour la Zone {formData.seismic_zone}.
                                             </div>
                                         )}
                                     </div>
                                 </div>
-
-                                {/* MONTE CARLO & PORTFOLIO */}
                                 <div className="grid grid-cols-2 gap-4">
                                     <div className="bg-slate-900/40 border border-white/5 p-5 rounded-3xl">
-                                        <p className="text-[9px] font-black text-slate-500 uppercase mb-3">Monte Carlo Mean Loss</p>
+                                        <p className="text-[9px] font-black text-slate-500 uppercase mb-3">Perte Moyenne Monte Carlo</p>
                                         <div className="text-xl font-black text-white tracking-tighter">{result.monte_carlo?.average_simulated_loss?.toLocaleString()} <span className="text-[10px] font-normal text-slate-500">DZD</span></div>
-                                        <p className="text-[9px] text-slate-400 mt-2 uppercase">Extreme (95%): {result.monte_carlo?.extreme_scenario_95?.toLocaleString()}</p>
+                                        <p className="text-[9px] text-slate-400 mt-2 uppercase">Extrême (95%): {result.monte_carlo?.extreme_scenario_95?.toLocaleString()}</p>
+                                    </div>
+                                    <div className="bg-slate-900/40 border border-white/5 p-5 rounded-3xl">
+                                        <p className="text-[9px] font-black text-slate-500 uppercase mb-3">Concentration Portefeuille</p>
+                                        <div className={`text-xl font-black tracking-tighter ${result.portfolio.warning ? 'text-amber-400' : 'text-emerald-400'}`}>
+                                            {result.portfolio.warning ? 'ALERTE HAUTE' : 'OPTIMALE'}
+                                        </div>
+                                        <p className="text-[9px] text-slate-400 mt-2 leading-none">{result.portfolio.note}</p>
                                     </div>
                                 </div>
                             </div>

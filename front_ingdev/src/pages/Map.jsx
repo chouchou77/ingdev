@@ -1,7 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { Link } from 'react-router-dom';
 
 const MapPage = () => {
     const mapRef = useRef(null);
@@ -44,7 +43,6 @@ const MapPage = () => {
     };
 
     const getVulnColor = (vuln, capital) => {
-        // Special case: Neutral color ONLY in Vulnerability mode if no capital
         if (!capital || capital <= 0) return '#334155';
         if (vuln === undefined) return '#1e293b';
         if (vuln === 0) return '#10b981';
@@ -153,17 +151,17 @@ const MapPage = () => {
                                 <div class="font-black border-b border-white/10 pb-2 mb-3 text-emerald-400 uppercase tracking-tighter">${name}</div>
                                 <div class="space-y-3 text-xs">
                                     <div class="flex justify-between items-center">
-                                        <span class="text-slate-500 font-bold">PROVINCE:</span>
+                                        <span class="text-slate-500 font-bold">WILAYA:</span>
                                         <span class="font-bold text-slate-300">${wilaya}</span>
                                     </div>
                                     <div class="flex justify-between items-center">
-                                        <span class="text-slate-500 font-bold">RISK ZONE:</span>
+                                        <span class="text-slate-500 font-bold">ZONE RISQUE:</span>
                                         <span class="px-2 py-0.5 rounded bg-white/5 font-black" style="color: ${getRiskColor(data?.risk)}">
                                             ZONE ${data?.risk || '0'}
                                         </span>
                                     </div>
                                     <div class="flex justify-between items-center">
-                                        <span class="text-slate-500 font-bold">PORTFOLIO:</span>
+                                        <span class="text-slate-500 font-bold">PORTEFEUILLE:</span>
                                         <span class="font-black ${data?.capital > 0 ? 'text-blue-400' : 'text-slate-600'}">
                                             ${formatMillion(data?.capital)} DZD
                                         </span>
@@ -171,13 +169,13 @@ const MapPage = () => {
                                     ${data?.capital > 0 ? `
                                     <div class="bg-emerald-500/10 p-2 rounded-xl border border-emerald-500/20 mt-4">
                                         <div class="flex justify-between items-center">
-                                            <span class="text-emerald-400 font-black text-[10px]">EXPOSURE INDEX:</span>
+                                            <span class="text-emerald-400 font-black text-[10px]">INDICE EXPOSITION:</span>
                                             <span class="font-black text-emerald-300 text-sm">${formatMillion(data?.vulnerability)} DZD</span>
                                         </div>
                                     </div>
                                     ` : `
                                     <div class="bg-slate-800/50 p-2 rounded-xl border border-white/5 mt-4 text-center">
-                                        <span class="text-slate-500 font-bold text-[10px]">NO ACTIVE POLICIES IN THIS SECTOR</span>
+                                        <span class="text-slate-500 font-bold text-[10px]">AUCUN CONTRAT ACTIF</span>
                                     </div>
                                     `}
                                 </div>
@@ -200,20 +198,19 @@ const MapPage = () => {
     return (
         <div className="flex flex-col h-screen bg-black overflow-hidden text-white font-sans">
             <header className="h-20 bg-slate-900/90 backdrop-blur-3xl border-b border-white/5 flex justify-between items-center px-10 z-50">
-
                 <div className="flex items-center gap-8">
                     <div className="flex bg-black/40 p-1.5 rounded-2xl border border-white/5 relative shadow-2xl backdrop-blur-xl">
                         <button
                             onClick={() => setViewMode('risk')}
                             className={`px-8 py-2.5 rounded-xl text-[10px] font-black tracking-widest transition-all z-10 ${viewMode === 'risk' ? 'text-white' : 'text-slate-600 hover:text-slate-400'}`}
                         >
-                            GEOGRAPHIC RISK
+                            RISQUE GÉOGRAPHIQUE
                         </button>
                         <button
                             onClick={() => setViewMode('vulnerability')}
                             className={`px-8 py-2.5 rounded-xl text-[10px] font-black tracking-widest transition-all z-10 ${viewMode === 'vulnerability' ? 'text-white' : 'text-slate-600 hover:text-slate-400'}`}
                         >
-                            EXPOSURE INDEX
+                            INDICE D'EXPOSITION
                         </button>
                         <div
                             className="absolute bg-emerald-600 top-1.5 bottom-1.5 rounded-xl transition-all duration-500 ease-out shadow-[0_0_20px_rgba(16,185,129,0.5)]"
@@ -234,8 +231,8 @@ const MapPage = () => {
                             <div className="w-32 h-32 border-[6px] border-emerald-500 border-t-transparent rounded-full animate-spin absolute top-0 left-0 shadow-[0_0_40px_rgba(16,185,129,0.2)]"></div>
                         </div>
                         <div className="text-center">
-                            <div className="text-emerald-500 font-black text-sm tracking-[0.5em] mb-2 uppercase">Syncing Node Mesh</div>
-                            <div className="text-slate-600 text-[10px] font-bold uppercase tracking-widest">Validating 1,541 Communes...</div>
+                            <div className="text-emerald-500 font-black text-sm tracking-[0.5em] mb-2 uppercase">Synchronisation du réseau</div>
+                            <div className="text-slate-600 text-[10px] font-bold uppercase tracking-widest">Validation de 1 541 Communes...</div>
                         </div>
                     </div>
                 )}
@@ -243,23 +240,23 @@ const MapPage = () => {
 
                 <div className="absolute bottom-12 right-12 z-1000 bg-slate-900/80 backdrop-blur-3xl p-8 rounded-[2.5rem] border border-white/10 shadow-2xl w-80">
                     <div className="flex items-center justify-between mb-8">
-                        <h4 className="text-[10px] font-black uppercase tracking-[0.4em] text-emerald-400 italic">Spectral Data</h4>
-                        <div className="px-2 py-1 rounded bg-emerald-500/10 border border-emerald-500/20 text-[8px] font-black text-emerald-500 animate-pulse">LIVE</div>
+                        <h4 className="text-[10px] font-black uppercase tracking-[0.4em] text-emerald-400 italic">Données Spectrales</h4>
+                        <div className="px-2 py-1 rounded bg-emerald-500/10 border border-emerald-500/20 text-[8px] font-black text-emerald-500 animate-pulse">DIRECT</div>
                     </div>
 
                     <div className="space-y-4">
                         {(viewMode === 'risk' ? [
-                            { l: 'Critical / Zone 4', c: '#ef4444', v: 'Severe' },
-                            { l: 'Major / Zone 3', c: '#f97316', v: 'High' },
-                            { l: 'Moderate / Zone 2', c: '#eab308', v: 'Med' },
-                            { l: 'Minor / Zone 1', c: '#3b82f6', v: 'Low' },
-                            { l: 'Baseline / Zone 0', c: '#10b981', v: 'Safe' }
+                            { l: 'Critique / Zone 3', c: '#ef4444', v: 'Sévère' },
+                            { l: 'Majeur / Zone 2b', c: '#f97316', v: 'Élevé' },
+                            { l: 'Modéré / Zone 2a', c: '#eab308', v: 'Moyen' },
+                            { l: 'Mineur / Zone 1', c: '#3b82f6', v: 'Faible' },
+                            { l: 'Base / Zone 0', c: '#10b981', v: 'Sûr' }
                         ] : [
-                            { l: 'Ultra High', c: '#ef4444', v: '> 200M' },
-                            { l: 'Elevated', c: '#f97316', v: '50-200M' },
+                            { l: 'Ultra Élevé', c: '#ef4444', v: '> 200M' },
+                            { l: 'Élevé', c: '#f97316', v: '50-200M' },
                             { l: 'Nominal', c: '#eab308', v: '10-50M' },
                             { l: 'Minimal', c: '#3b82f6', v: '< 10M' },
-                            { l: 'No Exposure', c: '#10b981', v: '0.0' }
+                            { l: 'Aucune Exposition', c: '#10b981', v: '0.0' }
                         ]).map((item, idx) => (
                             <div key={idx} className="flex items-center justify-between group">
                                 <div className="flex items-center gap-4">
@@ -274,9 +271,9 @@ const MapPage = () => {
                             <div className="pt-4 mt-4 border-t border-white/5 flex items-center justify-between group">
                                 <div className="flex items-center gap-4">
                                     <div className="w-1 h-6 rounded-full bg-[#334155] group-hover:w-3 transition-all"></div>
-                                    <span className="text-[11px] font-black text-slate-500 group-hover:text-slate-300 transition-colors uppercase italic">No Active Policies</span>
+                                    <span className="text-[11px] font-black text-slate-500 group-hover:text-slate-300 transition-colors uppercase italic">Aucun Contrat Actif</span>
                                 </div>
-                                <span className="text-[9px] font-black text-slate-600 font-mono uppercase">Inactive</span>
+                                <span className="text-[9px] font-black text-slate-600 font-mono uppercase">Inactif</span>
                             </div>
                         )}
                     </div>
@@ -284,8 +281,8 @@ const MapPage = () => {
                     <div className="mt-8">
                         <div className="text-[10px] text-slate-500 font-bold uppercase leading-relaxed border-l-2 border-emerald-500/30 pl-3">
                             {viewMode === 'risk'
-                                ? "Displaying raw seismic zoning covering ALL administrative territories."
-                                : "Displaying portfolio concentration: Areas with no policies are marked neutral."}
+                                ? "Affichage du zonage sismique brut couvrant TOUS les territoires administratifs."
+                                : "Affichage de la concentration du portefeuille : les zones sans contrats sont marquées neutres."}
                         </div>
                     </div>
                 </div>

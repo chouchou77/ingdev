@@ -5,10 +5,10 @@ const Navbar = () => {
     const location = useLocation();
 
     const navLinks = [
-        { name: 'Dashboard', path: '/', icon: '🏠' },
-        { name: 'Seismic Map', path: '/map', icon: '🗺️' },
-        { name: 'Risk Prediction', path: '/prediction', icon: '🔮' },
-        { name: 'Loss Simulation', path: '/simulation', icon: '📊' },
+        { name: 'Tableau de bord', path: '/', icon: '🏠' },
+        { name: 'Carte Sismique', path: '/map', icon: '🗺️' },
+        { name: 'Prédiction Risque', path: '/prediction', icon: '🔮' },
+        { name: 'Simulation Pertes', path: '/simulation', icon: '📊' },
     ];
 
     return (
@@ -22,7 +22,7 @@ const Navbar = () => {
                         CATNAT<span className="text-emerald-500">DZ</span>
                     </h1>
                     <p className="text-[10px] font-bold text-slate-500 tracking-[0.2em] uppercase">
-                        RPA 99/2003 Engine
+                        Moteur RPA 99/2003
                     </p>
                 </div>
             </div>
@@ -50,8 +50,8 @@ const Navbar = () => {
                 <div className="h-8 w-[1px] bg-white/10 mx-2 hidden md:block"></div>
                 <div className="flex items-center gap-3">
                     <div className="text-right hidden sm:block">
-                        <p className="text-[10px] font-black text-white uppercase leading-none">Admin User</p>
-                        <p className="text-[9px] font-bold text-emerald-500 uppercase tracking-tighter">Verified Analyst</p>
+                        <p className="text-[10px] font-black text-white uppercase leading-none">Utilisateur Admin</p>
+                        <p className="text-[9px] font-bold text-emerald-500 uppercase tracking-tighter">Analyste Vérifié</p>
                     </div>
                     <div className="w-9 h-9 rounded-full bg-linear-to-br from-slate-700 to-slate-900 border border-white/10 flex items-center justify-center text-sm">
                         👤

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 
 const Simulation = () => {
     const [formData, setFormData] = useState({
@@ -60,7 +60,8 @@ const Simulation = () => {
 
             const communeData = allData.find(d => d.wilaya === formData.wilaya && d.commune === formData.commune);
             if (communeData) {
-                const zone = communeData.risk_level >= 4 ? '3' : communeData.risk_level >= 2 ? '2' : '1';
+                const zone = communeData.risk_level >= 4 ? '3' :
+                    communeData.risk_level >= 2 ? '2' : '1';
                 const riskVal = communeData.risk_level === 0.5 ? 0.05 : communeData.risk_level * 0.1;
                 setFormData(prev => ({
                     ...prev,
@@ -81,7 +82,7 @@ const Simulation = () => {
                 risk_type: 'Bien immobilier',
                 capital_assure: parseFloat(formData.capital),
                 risk_level: parseFloat(formData.risk_level),
-                nb_floors: 1, // Standard for simulation
+                nb_floors: 1,
                 height_m: 3.5,
                 seismic_zone: parseInt(formData.seismic_zone),
             };
@@ -92,11 +93,11 @@ const Simulation = () => {
                 body: JSON.stringify(payload),
             });
 
-            if (!response.ok) throw new Error('Simulation failed');
+            if (!response.ok) throw new Error('Échec de la simulation');
             const data = await response.json();
             setResults(data);
         } catch (error) {
-            console.error("Simulation error:", error);
+            console.error("Erreur de simulation:", error);
         } finally {
             setIsSimulating(false);
         }
@@ -106,30 +107,28 @@ const Simulation = () => {
         <div className="min-h-screen bg-[#050505] text-slate-300 font-sans">
             <header className="h-40 bg-linear-to-b from-blue-600/20 to-transparent border-b border-white/5 flex flex-col items-center justify-center text-center p-8">
                 <h1 className="text-4xl font-black text-white tracking-tighter uppercase mb-2">
-                    Monte Carlo <span className="text-blue-500">Loss Engine</span>
+                    Moteur de Pertes <span className="text-blue-500">Monte Carlo</span>
                 </h1>
-                <p className="text-sm text-slate-500 font-bold uppercase tracking-[0.3em]">10,000 Iterations Lognormal Seismic Simulator</p>
+                <p className="text-sm text-slate-500 font-bold uppercase tracking-[0.3em]">10 000 Itérations Simulateur Sismique Lognormal</p>
             </header>
 
             <main className="max-w-6xl mx-auto py-12 px-6 grid grid-cols-1 lg:grid-cols-12 gap-12">
-
-                {/* CONFIGURATION */}
                 <div className="lg:col-span-4 space-y-8">
                     <div className="bg-slate-900/40 border border-white/5 p-8 rounded-[2rem] backdrop-blur-md">
                         <h3 className="text-xs font-black text-white uppercase tracking-widest mb-8 flex items-center gap-3">
                             <span className="w-1.5 h-6 bg-blue-500 rounded-full"></span>
-                            Parameter Matrix
+                            Matrice des Paramètres
                         </h3>
 
                         <div className="space-y-6">
                             <div className="space-y-2">
-                                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Context Location</label>
+                                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Localisation de Contexte</label>
                                 <select
                                     className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-blue-500/50"
                                     value={formData.wilaya}
                                     onChange={(e) => setFormData({ ...formData, wilaya: e.target.value })}
                                 >
-                                    <option value="">Select Wilaya</option>
+                                    <option value="">Sélectionner Wilaya</option>
                                     {wilayas.map(w => <option key={w} value={w}>{w}</option>)}
                                 </select>
                                 <select
@@ -138,13 +137,13 @@ const Simulation = () => {
                                     value={formData.commune}
                                     onChange={(e) => setFormData({ ...formData, commune: e.target.value })}
                                 >
-                                    <option value="">Select Commune</option>
+                                    <option value="">Sélectionner Commune</option>
                                     {communes.map(c => <option key={c} value={c}>{c}</option>)}
                                 </select>
                             </div>
 
                             <div className="space-y-2">
-                                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Exposure Capital (DZD)</label>
+                                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Capital d'Exposition (DZD)</label>
                                 <input
                                     type="number"
                                     className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-sm text-white font-mono focus:outline-none focus:border-blue-500/50"
@@ -154,7 +153,7 @@ const Simulation = () => {
                             </div>
 
                             <div className="p-4 bg-blue-500/5 border border-blue-500/10 rounded-2xl">
-                                <p className="text-[10px] font-black text-blue-400 uppercase mb-1">Detected Zone</p>
+                                <p className="text-[10px] font-black text-blue-400 uppercase mb-1">Zone Détectée</p>
                                 <p className="text-xl font-black text-white">Zone {formData.seismic_zone}</p>
                             </div>
 
@@ -163,25 +162,24 @@ const Simulation = () => {
                                 disabled={isSimulating || !formData.commune}
                                 className="w-full bg-blue-600 hover:bg-blue-500 text-white p-4 rounded-xl font-black text-[10px] uppercase tracking-[0.2em] transition-all disabled:opacity-30"
                             >
-                                {isSimulating ? 'SIMULATING...' : 'RUN MONTE CARLO'}
+                                {isSimulating ? 'SIMULATION EN COURS...' : 'LANCER MONTE CARLO'}
                             </button>
                         </div>
                     </div>
                 </div>
 
-                {/* RESULTS */}
                 <div className="lg:col-span-8">
                     {!results ? (
                         <div className="h-full bg-white/5 border border-white/5 border-dashed rounded-[2rem] flex flex-col items-center justify-center p-12 text-center grayscale opacity-30">
                             <span className="text-7xl mb-6">🎲</span>
-                            <h3 className="text-xl font-black text-white uppercase">Engine Standby</h3>
-                            <p className="text-slate-400 max-w-xs mt-2 text-sm">Select a municipality and define exposure capital to start the stochastic loss analysis.</p>
+                            <h3 className="text-xl font-black text-white uppercase">Moteur en Veille</h3>
+                            <p className="text-slate-400 max-w-xs mt-2 text-sm">Sélectionnez une commune et définissez le capital exposé pour lancer l'analyse stochastique des pertes.</p>
                         </div>
                     ) : (
                         <div className="space-y-8 animate-in slide-in-from-right-8 duration-500">
                             <div className="grid grid-cols-2 gap-8">
                                 <div className="bg-slate-900 border border-white/5 p-8 rounded-[2rem] shadow-2xl">
-                                    <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-4">Mean Expected Loss</p>
+                                    <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-4">Perte Moyenne Attendue</p>
                                     <div className="text-4xl font-black text-white tracking-tighter">
                                         {results.Expected_Loss.toLocaleString()} <span className="text-sm font-normal text-slate-500">DZD</span>
                                     </div>
@@ -189,24 +187,24 @@ const Simulation = () => {
                                         <div className="h-1.5 flex-1 bg-white/5 rounded-full overflow-hidden">
                                             <div className="h-full bg-blue-500" style={{ width: '25%' }}></div>
                                         </div>
-                                        <span className="text-[10px] font-bold text-blue-400">NORMALIZED</span>
+                                        <span className="text-[10px] font-bold text-blue-400">NORMALISÉ</span>
                                     </div>
                                 </div>
                                 <div className="bg-linear-to-br from-red-600 to-red-900 border border-white/10 p-8 rounded-[2rem] shadow-2xl relative overflow-hidden">
                                     <div className="relative z-10">
-                                        <p className="text-[10px] font-black text-red-200 uppercase tracking-widest mb-4">PML 95% (Extreme Scenario)</p>
+                                        <p className="text-[10px] font-black text-red-200 uppercase tracking-widest mb-4">PML 95% (Scénario Extrême)</p>
                                         <div className="text-4xl font-black text-white tracking-tighter">
                                             {results.PML_95.toLocaleString()} <span className="text-sm font-normal text-red-300">DZD</span>
                                         </div>
                                     </div>
-                                    <span className="absolute -right-4 -bottom-4 text-7xl opacity-10 pointer-events-none">⚠️</span>
+                                    <span className="absolute -right-4 -bottom-4 text-7xl opacity-10 pointer-events-none text-white">⚠️</span>
                                 </div>
                             </div>
 
                             <div className="bg-white/5 border border-white/5 p-8 rounded-[2.5rem]">
                                 <h4 className="text-xs font-black text-white uppercase tracking-widest mb-8 flex items-center gap-3">
                                     <span className="w-1.5 h-6 bg-emerald-500 rounded-full"></span>
-                                    Simulation Statistics (n=10k)
+                                    Statistiques de Simulation (n=10k)
                                 </h4>
                                 <div className="grid grid-cols-3 gap-8">
                                     <div>
@@ -214,18 +212,18 @@ const Simulation = () => {
                                         <p className="text-lg font-black text-white">{results.PML_99.toLocaleString()}</p>
                                     </div>
                                     <div>
-                                        <p className="text-[10px] font-black text-slate-500 uppercase mb-2">Absolute Max Loss</p>
+                                        <p className="text-[10px] font-black text-slate-500 uppercase mb-2">Perte Max Absolue</p>
                                         <p className="text-lg font-black text-white">{results.Max_Loss.toLocaleString()}</p>
                                     </div>
                                     <div>
-                                        <p className="text-[10px] font-black text-slate-500 uppercase mb-2">Recurrence Interval</p>
-                                        <p className="text-lg font-black text-white">475-2475 Years</p>
+                                        <p className="text-[10px] font-black text-slate-500 uppercase mb-2">Intervalle de Récurrence</p>
+                                        <p className="text-lg font-black text-white">475-2475 Ans</p>
                                     </div>
                                 </div>
 
                                 <div className="mt-12 p-6 bg-black/40 border border-white/10 rounded-2xl">
                                     <p className="text-[10px] italic text-slate-400 leading-relaxed font-medium">
-                                        Analytics Note: This simulation uses a lognormal distribution calibrated for Algerian seismic zones.
+                                        Note d'Analyse: Cette simulation utilise une distribution lognormale calibrée pour les zones sismiques algériennes.
                                         {results.Note}
                                     </p>
                                 </div>
@@ -233,7 +231,6 @@ const Simulation = () => {
                         </div>
                     )}
                 </div>
-
             </main>
         </div>
     );

@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { Link } from 'react-router-dom';
+import { useState, useEffect, useMemo } from 'react';
+import { Bar } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -9,26 +9,20 @@ import {
   Tooltip,
   Legend,
 } from 'chart.js';
-import { Bar } from 'react-chartjs-2';
 
-ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend
+);
 
 const Home = () => {
   const [data, setData] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-
-  const wilayaIdNames = {
-    1: 'Adrar', 2: 'Chlef', 3: 'Laghouat', 4: 'Oum El Bouaghi', 5: 'Batna',
-    6: 'Bejaia', 7: 'Biskra', 8: 'Bechar', 9: 'Blida', 10: 'Bouira',
-    11: 'Tamanrasset', 12: 'Tebessa', 13: 'Tlemcen', 14: 'Tiaret', 15: 'Tizi Ouzou',
-    16: 'Alger', 17: 'Djelfa', 18: 'Jijel', 19: 'Setif', 20: 'Saida',
-    21: 'Skikda', 22: 'Sidi Bel Abbes', 23: 'Annaba', 24: 'Guelma', 25: 'Constantine',
-    26: 'Medea', 27: 'Mostaganem', 28: 'M\'sila', 29: 'Mascara', 30: 'Ouargla',
-    31: 'Oran', 32: 'El Bayadh', 33: 'Illizi', 34: 'Bordj Bou Arreridj', 35: 'Boumerdes',
-    36: 'El Tarf', 37: 'Tindouf', 38: 'Tissemsilt', 39: 'El Oued', 40: 'Khenchela',
-    41: 'Souk Ahras', 42: 'Tipaza', 43: 'Mila', 44: 'Ain Defla', 45: 'Naama',
-    46: 'Ain Temouchent', 47: 'Ghardaia', 48: 'Relizane'
-  };
+  const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
     fetch('/merged_willaya_data.csv')
@@ -37,73 +31,78 @@ const Home = () => {
         const rows = text.split('\n').filter(line => line.trim() !== '').slice(1);
         const parsed = rows.map(row => {
           const cols = row.split(',');
-          const wId = parseInt(cols[1]);
           return {
-            wilaya: wilayaIdNames[wId] || `Wilaya ${wId}`,
+            w_id: parseInt(cols[1]),
             commune: cols[3],
             risk: parseFloat(cols[5]),
             capital: parseFloat(cols[6] || 0)
           };
         });
         setData(parsed);
-        setIsLoading(false);
-      });
+        setIsLoading(parsed.length === 0);
+      })
+      .catch(err => console.error(err))
+      .finally(() => setIsLoading(false));
   }, []);
-
-  const zoneStats = useMemo(() => {
-    const zones = {
-      '4.0': { label: 'Zone III (Sévère)', total: 0 },
-      '3.0': { label: 'Zone IIb', total: 0 },
-      '2.0': { label: 'Zone IIa', total: 0 },
-      '1.0': { label: 'Zone I', total: 0 },
-      '0.5': { label: 'Zone 0', total: 0 }
-    };
-
-    data.forEach(item => {
-      const key = item.risk.toFixed(1);
-      if (zones[key]) {
-        zones[key].total += item.capital;
-      }
-    });
-
-    return zones;
-  }, [data]);
-
-  const chartData = {
-    labels: Object.values(zoneStats).map(z => z.label),
-    datasets: [
-      {
-        label: 'Capital Total à Risque (Milliards DZD)',
-        data: Object.values(zoneStats).map(z => z.total / 1000000000),
-        backgroundColor: ['#b91c1c', '#f97316', '#eab308', '#3b82f6', '#10b981'],
-        borderRadius: 8,
-      },
-    ],
-  };
 
   const wilayaSummary = useMemo(() => {
     const summary = {};
-    data.forEach(item => {
-      if (!summary[item.wilaya]) {
-        summary[item.wilaya] = { name: item.wilaya, low: 0, med: 0, high: 0, total: 0 };
+    const wilayaIdNames = {
+      1: 'Adrar', 2: 'Chlef', 3: 'Laghouat', 4: 'Oum El Bouaghi', 5: 'Batna',
+      6: 'Bejaia', 7: 'Biskra', 8: 'Bechar', 9: 'Blida', 10: 'Bouira',
+      11: 'Tamanrasset', 12: 'Tebessa', 13: 'Tlemcen', 14: 'Tiaret', 15: 'Tizi Ouzou',
+      16: 'Alger', 17: 'Djelfa', 18: 'Jijel', 19: 'Setif', 20: 'Saida',
+      21: 'Skikda', 22: 'Sidi Bel Abbes', 23: 'Annaba', 24: 'Guelma', 25: 'Constantine',
+      26: 'Medea', 27: 'Mostaganem', 28: 'M\'sila', 29: 'Mascara', 30: 'Ouargla',
+      31: 'Oran', 32: 'El Bayadh', 33: 'Illizi', 34: 'Bordj Bou Arreridj', 35: 'Boumerdes',
+      36: 'El Tarf', 37: 'Tindouf', 38: 'Tissemsilt', 39: 'El Oued', 40: 'Khenchela',
+      41: 'Souk Ahras', 42: 'Tipaza', 43: 'Mila', 44: 'Ain Defla', 45: 'Naama',
+      46: 'Ain Temouchent', 47: 'Ghardaia', 48: 'Relizane'
+    };
+
+    data.forEach(d => {
+      if (!summary[d.w_id]) {
+        summary[d.w_id] = { name: wilayaIdNames[d.w_id] || `Wilaya ${d.w_id}`, low: 0, med: 0, high: 0, total: 0 };
       }
-      const val = item.capital;
-      summary[item.wilaya].total += val;
-      if (item.risk >= 3) summary[item.wilaya].high += val;
-      else if (item.risk >= 1.5) summary[item.wilaya].med += val;
-      else summary[item.wilaya].low += val;
+      if (d.risk <= 1) summary[d.w_id].low += d.capital;
+      else if (d.risk <= 3) summary[d.w_id].med += d.capital;
+      else summary[d.w_id].high += d.capital;
+      summary[d.w_id].total += d.capital;
     });
     return Object.values(summary).sort((a, b) => b.total - a.total);
   }, [data]);
 
+  const filteredWilayaSummary = useMemo(() => {
+    return wilayaSummary.filter(w =>
+      w.name.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  }, [wilayaSummary, searchTerm]);
+
+  const chartData = {
+    labels: ['Zone I', 'Zone IIa', 'Zone IIb', 'Zone III'],
+    datasets: [{
+      label: 'Capital Assuré (Milliards DZD)',
+      data: [
+        data.filter(d => d.risk === 1).reduce((acc, curr) => acc + curr.capital, 0) / 1000000000,
+        data.filter(d => d.risk === 2).reduce((acc, curr) => acc + curr.capital, 0) / 1000000000,
+        data.filter(d => d.risk === 3).reduce((acc, curr) => acc + curr.capital, 0) / 1000000000,
+        data.filter(d => d.risk === 4).reduce((acc, curr) => acc + curr.capital, 0) / 1000000000,
+      ],
+      backgroundColor: ['#3b82f6', '#eab308', '#f97316', '#ef4444'],
+      borderRadius: 12,
+    }]
+  };
+
   const recommendations = useMemo(() => {
     const totalCapital = data.reduce((acc, curr) => acc + curr.capital, 0);
-    const weightedSum = data.reduce((acc, curr) => acc + (curr.capital * curr.risk), 0);
-    const weightedAvgRisk = totalCapital > 0 ? (weightedSum / totalCapital) : 0;
-    const globalExposureScore = (weightedAvgRisk / 4.0) * 100;
+    const weightedRiskSum = data.reduce((acc, curr) => acc + (curr.risk * curr.capital), 0);
+    const weightedAvgRisk = totalCapital > 0 ? (weightedRiskSum / totalCapital) : 0;
+
+    // Scale risk 0-4 to 0-100%
+    const globalExposureScore = (weightedAvgRisk / 4) * 100;
 
     const topHighRiskCommunes = [...data]
-      .filter(d => d.risk >= 3 && d.capital > 0)
+      .filter(d => d.risk >= 3)
       .sort((a, b) => b.capital - a.capital)
       .slice(0, 5);
 
@@ -159,7 +158,7 @@ const Home = () => {
         <div className="lg:col-span-2 space-y-8">
           <div className="bg-white p-8 rounded-3xl shadow-sm border border-slate-100">
             <div className="flex justify-between items-center mb-8">
-              <h2 className="text-xl font-black text-slate-900 uppercase tracking-tighter text-black">Capital Agrégé par Zone Sismique</h2>
+              <h2 className="text-xl font-black text-black uppercase tracking-tighter text-black">Capital Agrégé par Zone Sismique</h2>
               <span className="px-3 py-1 bg-blue-50 text-blue-600 text-[10px] font-black rounded-full border border-blue-100 uppercase tracking-widest leading-none">Milliards DZD</span>
             </div>
             <div className="h-[400px]">
@@ -179,12 +178,17 @@ const Home = () => {
           </div>
 
           <div className="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden">
-            <div className="p-8 border-b border-slate-50 flex justify-between items-center">
-              <h2 className="text-xl font-black text-slate-900 uppercase tracking-tighter text-black">Tableau de bord des cumuls (Wwilayas)</h2>
-              <div className="flex gap-2">
-                <span className="w-2 h-2 rounded-full bg-red-400"></span>
-                <span className="w-2 h-2 rounded-full bg-yellow-400"></span>
-                <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
+            <div className="p-8 border-b border-slate-50 flex flex-col md:flex-row justify-between items-center gap-4">
+              <h2 className="text-xl font-black text-slate-900 uppercase tracking-tighter text-black">Tableau de bord des cumuls (Wilayas)</h2>
+              <div className="relative w-full md:w-64">
+                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-xs">🔍</span>
+                <input
+                  type="text"
+                  placeholder="Rechercher une wilaya..."
+                  className="bg-slate-50 border border-slate-200 rounded-2xl py-3 pl-10 pr-6 text-sm text-slate-800 focus:outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/5 transition-all w-full font-bold"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
               </div>
             </div>
             <div className="overflow-x-auto">
@@ -199,7 +203,7 @@ const Home = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-50">
-                  {wilayaSummary.map((w, idx) => (
+                  {filteredWilayaSummary.map((w, idx) => (
                     <tr key={idx} className="hover:bg-slate-50/50 transition-colors">
                       <td className="px-8 py-4 font-bold text-slate-700">{w.name}</td>
                       <td className="px-4 py-4 text-center text-slate-500 font-mono text-[11px]">{(w.low / 1000000).toFixed(1)}M</td>
@@ -228,52 +232,48 @@ const Home = () => {
               <div className="mt-6 flex gap-2">
                 {parseInt(recommendations.ratio) > 50 ?
                   <span className="bg-red-500/20 text-red-400 px-3 py-1 rounded-full text-[9px] font-black border border-red-500/20">🚨 SUREXPOSÉ</span>
-                  : <span className="bg-emerald-500/20 text-emerald-400 px-3 py-1 rounded-full text-[9px] font-black border border-emerald-500/20">✅ SAIN</span>
+                  : <span className="bg-emerald-500/20 text-emerald-400 px-3 py-1 rounded-full text-[9px] font-black border border-emerald-500/20">✅ SOUS CONTRÔLE</span>
                 }
               </div>
             </div>
-            <div className="absolute -bottom-4 -right-4 opacity-5 pointer-events-none group-hover:rotate-12 transition-transform">
-              <span className="text-9xl">📉</span>
+            <div className="absolute top-0 right-0 p-8 opacity-5 pointer-events-none group-hover:rotate-12 transition-transform">
+              <span className="text-9xl">📊</span>
             </div>
           </div>
 
-          <div className="bg-white p-8 rounded-4xl shadow-sm border border-slate-100">
-            <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest mb-8 flex items-center gap-3">
-              <span className="w-1.5 h-6 bg-emerald-500 rounded-full"></span>
-              Optimisation Portefeuille
+          <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-100">
+            <h3 className="text-[10px] font-black text-red-500 uppercase tracking-widest mb-6 flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-red-500 animate-ping"></span>
+              Alertes de Concentration
             </h3>
-            <div className="space-y-8">
-              <div>
-                <div className="flex items-center gap-2 text-emerald-600 mb-4">
+            <div className="space-y-4">
+              {recommendations.stop.map((comm, i) => (
+                <div key={i} className="flex justify-between items-center p-4 bg-red-50 rounded-2xl border border-red-100">
+                  <div>
+                    <p className="text-sm font-black text-slate-900">{comm.commune}</p>
+                    <p className="text-[9px] font-bold text-red-400 uppercase tracking-tighter">Zone Risque: {comm.risk}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-xs font-black text-slate-900">{(comm.capital / 1000000).toFixed(1)}M</p>
+                    <p className="text-[8px] text-slate-400 font-bold">DZD</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="bg-emerald-900 text-white p-8 rounded-[2.5rem] shadow-xl">
+            <h3 className="text-[10px] font-black text-emerald-400 uppercase tracking-widest mb-6">Opportunités d'Expansion</h3>
+            <div className="space-y-4">
+              {recommendations.grow.map((comm, i) => (
+                <div key={i} className="flex justify-between items-center p-4 bg-white/5 rounded-2xl border border-white/10 hover:bg-white/10 transition-colors">
+                  <div>
+                    <p className="text-sm font-black text-white">{comm.commune}</p>
+                    <p className="text-[9px] font-bold text-emerald-400 uppercase tracking-tighter">Secteur Sûr / Z{comm.risk}</p>
+                  </div>
                   <span className="text-lg">📈</span>
-                  <span className="text-[10px] font-black uppercase tracking-widest text-emerald-700">Croissance Recommandée</span>
                 </div>
-                <ul className="space-y-3">
-                  {recommendations.grow.length > 0 ? recommendations.grow.map((c, i) => (
-                    <li key={i} className="bg-emerald-50/50 border border-emerald-100 p-3 rounded-2xl flex justify-between items-center group hover:bg-emerald-50 transition-colors">
-                      <span className="text-xs font-bold text-slate-700">{c.commune}</span>
-                      <span className="text-[9px] font-black text-emerald-600 bg-white px-2 py-0.5 rounded-full border border-emerald-200 uppercase">OPS SÛRE</span>
-                    </li>
-                  )) : <li className="text-xs text-slate-400 italic">Aucune opportunité à faible risque identifiée.</li>}
-                </ul>
-              </div>
-              <div>
-                <div className="flex items-center gap-2 text-red-600 mb-4">
-                  <span className="text-lg">📉</span>
-                  <span className="text-[10px] font-black uppercase tracking-widest text-red-700">Désengagement Nécessaire</span>
-                </div>
-                <ul className="space-y-3">
-                  {recommendations.stop.length > 0 ? recommendations.stop.map((c, i) => (
-                    <li key={i} className="bg-red-50/50 border border-red-100 p-3 rounded-2xl flex justify-between items-center group hover:bg-red-50 transition-colors">
-                      <div className="flex flex-col">
-                        <span className="text-xs font-bold text-slate-700">{c.commune}</span>
-                        <span className="text-[9px] text-slate-400">Exposition: {(c.capital / 1000000).toFixed(1)}M</span>
-                      </div>
-                      <span className="text-[9px] font-black text-red-600 bg-white px-2 py-0.5 rounded-full border border-red-200 uppercase">CESSER</span>
-                    </li>
-                  )) : <li className="text-xs text-slate-400 italic">Aucune surexposition critique détectée.</li>}
-                </ul>
-              </div>
+              ))}
             </div>
           </div>
         </div>

@@ -6,9 +6,16 @@ const MapPage = () => {
     const mapRef = useRef(null);
     const mapInstanceRef = useRef(null);
     const geoJsonLayerRef = useRef(null);
+
+    // States
     const [riskMapping, setRiskMapping] = useState({});
     const [isLoaded, setIsLoaded] = useState(false);
     const [viewMode, setViewMode] = useState('risk');
+    const [mapSearchTerm, setMapSearchTerm] = useState('');
+    const [searchResults, setSearchResults] = useState([]);
+
+    // Refs
+    const layerMappingRef = useRef({});
 
     const wilayaIdNames = {
         1: 'ADRAR', 2: 'CHLEF', 3: 'LAGHOUAT', 4: 'OUMELBOUAGHI', 5: 'BATNA',
@@ -142,9 +149,14 @@ const MapPage = () => {
                         };
                     },
                     onEachFeature: (feature, layer) => {
-                        const data = newMapping[feature.properties?.adm2_pcode];
+                        const pcode = feature.properties?.adm2_pcode;
+                        const data = newMapping[pcode];
                         const name = feature.properties?.adm2_name;
                         const wilaya = feature.properties?.adm1_name;
+
+                        if (pcode) {
+                            layerMappingRef.current[pcode] = layer;
+                        }
 
                         const popupContent = `
                             <div class="p-4 min-w-[220px] bg-slate-900 text-white rounded-lg">
@@ -195,6 +207,30 @@ const MapPage = () => {
         });
     }, [viewMode]);
 
+    const handleSearch = (e) => {
+        const val = e.target.value;
+        setMapSearchTerm(val);
+        if (val.length > 1) {
+            const matches = Object.entries(riskMapping)
+                .filter(([pcode, data]) => data.geoName.toLowerCase().includes(val.toLowerCase()))
+                .slice(0, 10)
+                .map(([pcode, data]) => ({ pcode, ...data }));
+            setSearchResults(matches);
+        } else {
+            setSearchResults([]);
+        }
+    };
+
+    const zoomToCommune = (pcode) => {
+        const layer = layerMappingRef.current[pcode];
+        if (layer && mapInstanceRef.current) {
+            mapInstanceRef.current.fitBounds(layer.getBounds(), { padding: [50, 50], maxZoom: 12 });
+            layer.openPopup();
+        }
+        setMapSearchTerm('');
+        setSearchResults([]);
+    };
+
     return (
         <div className="flex flex-col h-screen bg-black overflow-hidden text-white font-sans">
             <header className="h-20 bg-slate-900/90 backdrop-blur-3xl border-b border-white/5 flex justify-between items-center px-10 z-50">
@@ -220,6 +256,36 @@ const MapPage = () => {
                             }}
                         ></div>
                     </div>
+                </div>
+
+                <div className="relative w-96 group">
+                    <div className="flex items-center bg-black/40 border border-white/10 rounded-2xl px-4 py-2 focus-within:border-emerald-500 transition-all">
+                        <span className="text-slate-500 mr-2 uppercase text-[10px] font-black">Recherche</span>
+                        <input
+                            type="text"
+                            className="bg-transparent border-none text-white text-sm focus:outline-none w-full font-bold placeholder:text-slate-700"
+                            placeholder="Entrez le nom d'une commune..."
+                            value={mapSearchTerm}
+                            onChange={handleSearch}
+                        />
+                        <span className="text-slate-600">🔍</span>
+                    </div>
+                    {searchResults.length > 0 && (
+                        <div className="absolute top-full left-0 right-0 mt-2 bg-slate-900/95 backdrop-blur-xl border border-white/10 rounded-2xl overflow-hidden shadow-2xl z-50 max-h-80 overflow-y-auto custom-scrollbar">
+                            {searchResults.map((res) => (
+                                <button
+                                    key={res.pcode}
+                                    className="w-full text-left p-4 hover:bg-emerald-500/10 border-b border-white/5 transition-colors group"
+                                    onClick={() => zoomToCommune(res.pcode)}
+                                >
+                                    <div className="text-sm font-black text-white group-hover:text-emerald-400">{res.geoName}</div>
+                                    <div className="text-[9px] text-slate-500 font-bold uppercase tracking-widest mt-1">
+                                        Wilaya ID: {res.wilayaId} • Zone: {res.risk}
+                                    </div>
+                                </button>
+                            ))}
+                        </div>
+                    )}
                 </div>
             </header>
 

@@ -12,3 +12,4 @@
 2026-04-18 10:29:49,255 - ERROR - Erreur logique de prédiction: catboost/libs/data/model_dataset_compatibility.cpp:81: At position 6 should be feature with name PML (found A_FACTOR).
 2026-04-18 10:29:58,763 - ERROR - Erreur logique de prédiction: catboost/libs/data/model_dataset_compatibility.cpp:81: At position 6 should be feature with name PML (found A_FACTOR).
 2026-04-18 10:30:22,598 - ERROR - Erreur logique de prédiction: catboost/libs/data/model_dataset_compatibility.cpp:81: At position 6 should be feature with name PML (found A_FACTOR).
+2026-04-18 10:37:52,737 - INFO - ✅ Modèle CatBoost chargé avec succès depuis: catboost_risk_index_model.cbm

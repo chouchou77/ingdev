@@ -203,7 +203,7 @@ def ai_prediction_service(model, data, is_compliant: bool, r_factor: float = 2.5
         'CAPITAL_ASSURE': data.capital_assure,
         'RISK_LEVEL': data.risk_level,
         'V_FACTOR': v_val,
-        'A_FACTOR': a_val,
+        'PML': a_val,
         'R_FACTOR': r_factor
     }])
     

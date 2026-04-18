@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 
 const Prediction = () => {
+    const [selectedWilayaId, setSelectedWilayaId] = useState(null);
     const [formData, setFormData] = useState({
         wilaya: '',
         commune: '',
@@ -51,10 +52,12 @@ const Prediction = () => {
                 const data = rows.map(row => {
                     const cols = row.split(',');
                     const wId = parseInt(cols[1]);
+                    const wilayaName = (wilayaIdNames[wId] || `Wilaya ${wId}`).toUpperCase();
+                    const communeName = cols[3]?.trim().toUpperCase();
                     return {
                         w_id: wId,
-                        wilaya: wilayaIdNames[wId] || `Wilaya ${wId}`,
-                        commune: cols[3],
+                        wilaya: wilayaName,
+                        commune: communeName,
                         risk_level: parseFloat(cols[5]) || 0.1,
                         capital: parseFloat(cols[6]) || 0
                     };
@@ -67,14 +70,19 @@ const Prediction = () => {
 
     useEffect(() => {
         if (formData.wilaya) {
-            const filtered = allData
-                .filter(d => d.wilaya === formData.wilaya)
+            const currentWilayaNames = allData
+                .filter(d => d.wilaya === formData.wilaya.toUpperCase())
                 .map(d => d.commune)
                 .sort();
-            setCommunes(filtered);
+            setCommunes(currentWilayaNames);
 
-            const communeData = allData.find(d => d.wilaya === formData.wilaya && d.commune === formData.commune);
+            const communeData = allData.find(d =>
+                d.wilaya === formData.wilaya.toUpperCase() &&
+                d.commune === formData.commune.toUpperCase()
+            );
+
             if (communeData) {
+                setSelectedWilayaId(communeData.w_id);
                 const zone = communeData.risk_level >= 4 ? '3' :
                     communeData.risk_level >= 2 ? '2' : '1';
 
@@ -92,12 +100,14 @@ const Prediction = () => {
         setIsSubmitting(true);
         setResult(null);
 
-        const communeData = allData.find(d => d.wilaya === formData.wilaya && d.commune === formData.commune);
+        const currentWilaya = formData.wilaya.toUpperCase();
+        const currentCommune = formData.commune.toUpperCase();
+        const communeData = allData.find(d => d.wilaya === currentWilaya && d.commune === currentCommune);
         const mappedRisk = communeData ? (communeData.risk_level === 0.5 ? 0.05 : communeData.risk_level * 0.1) : 0.2;
 
         const payload = {
-            wilaya: formData.wilaya,
-            commune: formData.commune,
+            wilaya: currentWilaya,
+            commune: currentCommune,
             risk_type: formData.buildingType === 'résidentiel' ? 'Bien immobilier' :
                 formData.buildingType === 'industriel' ? 'Installation Industrielle' : 'Commercial',
             capital_assure: parseFloat(formData.capital),
@@ -241,7 +251,7 @@ const Prediction = () => {
                                     <InputField label="Résistance du béton (MPa)" name="concrete_strength_mpa" type="number" />
                                 </div>
                             )}
-                            <button type="submit" disabled={isSubmitting} className="w-full mt-12 bg-emerald-600 hover:bg-emerald-500 text-white p-5 rounded-2xl font-black text-xs uppercase tracking-[0.2em] transition-all shadow-[0_0_40px_rgba(16,185,129,0.2)] disabled:bg-slate-800">
+                            <button type="submit" disabled={isSubmitting || !formData.wilaya || !formData.commune} className="w-full mt-12 bg-emerald-600 hover:bg-emerald-500 text-white p-5 rounded-2xl font-black text-xs uppercase tracking-[0.2em] transition-all shadow-[0_0_40px_rgba(16,185,129,0.2)] disabled:bg-slate-800">
                                 {isSubmitting ? 'CALCUL DU MOTEUR...' : 'GÉNÉRER LE RAPPORT COMPLET'}
                             </button>
                         </form>

@@ -35,8 +35,8 @@ const Navbar = () => {
                             key={link.path}
                             to={link.path}
                             className={`px-5 py-2.5 rounded-xl text-xs font-black transition-all flex items-center gap-2 border ${isActive
-                                    ? 'bg-emerald-500/10 border-emerald-500/50 text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.1)]'
-                                    : 'text-slate-400 border-transparent hover:bg-white/5 hover:text-slate-100'
+                                ? 'bg-emerald-500/10 border-emerald-500/50 text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.1)]'
+                                : 'text-slate-400 border-transparent hover:bg-white/5 hover:text-slate-100'
                                 }`}
                         >
                             <span>{link.icon}</span>

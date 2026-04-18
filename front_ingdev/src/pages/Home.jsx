@@ -79,16 +79,17 @@ const Home = () => {
   }, [wilayaSummary, searchTerm]);
 
   const chartData = {
-    labels: ['Zone I', 'Zone IIa', 'Zone IIb', 'Zone III'],
+    labels: ['Zone 0', 'Zone I', 'Zone IIa', 'Zone IIb', 'Zone III'],
     datasets: [{
       label: 'Capital Assuré (Milliards DZD)',
       data: [
+        data.filter(d => d.risk === 0.5).reduce((acc, curr) => acc + curr.capital, 0) / 1000000000,
         data.filter(d => d.risk === 1).reduce((acc, curr) => acc + curr.capital, 0) / 1000000000,
         data.filter(d => d.risk === 2).reduce((acc, curr) => acc + curr.capital, 0) / 1000000000,
         data.filter(d => d.risk === 3).reduce((acc, curr) => acc + curr.capital, 0) / 1000000000,
         data.filter(d => d.risk === 4).reduce((acc, curr) => acc + curr.capital, 0) / 1000000000,
       ],
-      backgroundColor: ['#3b82f6', '#eab308', '#f97316', '#ef4444'],
+      backgroundColor: ['#10b981', '#3b82f6', '#eab308', '#f97316', '#ef4444'],
       borderRadius: 12,
     }]
   };

@@ -173,10 +173,19 @@ def monte_carlo_service(capital: float, risk_level: float, v_factor: float, seis
         elif risk_level >= 0.20: seismic_zone = 2
         else: seismic_zone = 1
 
-    params = {1: (np.log(0.12), 0.8), 2: (np.log(0.20), 0.95), 3: (np.log(0.30), 1.1)}
-    mu, sigma = params.get(seismic_zone, (np.log(0.2), 0.95))
+    # More realistic parameters for seismic damage distributions
+    # Adjusting mu and sigma to avoid constant 1.0 clipping
+    params = {
+        1: (np.log(0.05), 0.6), 
+        2: (np.log(0.12), 0.7), 
+        3: (np.log(0.20), 0.8)
+    }
+    mu, sigma = params.get(seismic_zone, (np.log(0.1), 0.7))
     
-    damage_ratio = np.clip(np.random.lognormal(mu, sigma, iterations), 0.0, 1.0)
+    # Generate lognormal distribution for damage ratio (percentage of PML)
+    damage_ratio = np.clip(np.random.lognormal(mu, sigma, iterations), 0.01, 1.0)
+    
+    # Loss = Exposure * Multiplier * Random Damage factor
     losses = capital * risk_level * v_factor * damage_ratio
 
     return {
@@ -187,29 +196,38 @@ def monte_carlo_service(capital: float, risk_level: float, v_factor: float, seis
         "Note": f"Méthodologie Monte Carlo ({iterations:,} scénarios) | Zone {seismic_zone}"
     }
 
-def ai_prediction_service(model, data, is_compliant: bool, r_factor: float = 2.5) -> float:
-    a_val = data.a_factor if (data.a_factor and data.a_factor > 0) else data.risk_level
-    v_val = 1.5 if "ind" in data.risk_type.lower() else 1.0
+def ai_prediction_service(model, data, is_compliant: bool) -> float:
+    # 1. Normalize Risk Level (A-factor) to decimal (e.g., 0.4 for Zone III)
+    a_val = data.risk_level if data.risk_level < 1 else data.risk_level * 0.1
+    if data.a_factor and data.a_factor > 0:
+        a_val = data.a_factor if data.a_factor < 1 else data.a_factor * 0.1
+        
+    v_val = 1.5 if any(x in data.risk_type.lower() for x in ["ind", "com", "industriel", "commercial"]) else 1.0
     
+    # 2. Correct PML Calculation (Monetary Target)
+    pml_val = data.capital_assure * a_val * v_val
+
     if not model_loaded:
         base_index = (a_val * 1000) * v_val
         if not is_compliant: base_index *= 1.3
         return min(max(base_index, 50), 550)
 
+    # 3. Reconstruct Feature Set (Exact 7 features as per training)
+    # WILAYA, COMMUNE, TYPE, CAPITAL_ASSURE, RISK_LEVEL, V_FACTOR, PML
     input_df = pd.DataFrame([{
         'WILAYA': data.wilaya.upper(),
         'COMMUNE': data.commune.upper(),
         'TYPE': data.risk_type,
-        'CAPITAL_ASSURE': data.capital_assure,
-        'RISK_LEVEL': data.risk_level,
-        'V_FACTOR': v_val,
-        'PML': a_val,
-        'R_FACTOR': r_factor
+        'CAPITAL_ASSURE': float(data.capital_assure),
+        'RISK_LEVEL': float(a_val),
+        'V_FACTOR': float(v_val),
+        'PML': float(pml_val)
     }])
     
     try:
+        # Prediction using model
         raw_pred = model.predict(input_df)[0]
-        risk_index = raw_pred * (229 / 80) * (1 / r_factor)
+        risk_index = raw_pred * (229 / 80)
     except Exception as e:
         logger.error(f"Erreur logique de prédiction: {e}")
         risk_index = 280.0 

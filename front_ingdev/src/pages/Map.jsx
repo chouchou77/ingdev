@@ -6,32 +6,45 @@ const MapPage = () => {
     const mapRef = useRef(null);
     const mapInstanceRef = useRef(null);
     const geoJsonLayerRef = useRef(null);
+    const layerMappingRef = useRef({});
 
     // States
+    const [geoData, setGeoData] = useState(null);
     const [riskMapping, setRiskMapping] = useState({});
     const [isLoaded, setIsLoaded] = useState(false);
     const [viewMode, setViewMode] = useState('risk');
     const [mapSearchTerm, setMapSearchTerm] = useState('');
     const [searchResults, setSearchResults] = useState([]);
 
-    // Refs
-    const layerMappingRef = useRef({});
-
+    // Data Constants
     const wilayaIdNames = {
-        1: 'ADRAR', 2: 'CHLEF', 3: 'LAGHOUAT', 4: 'OUMELBOUAGHI', 5: 'BATNA',
+        1: 'ADRAR', 2: 'CHLEF', 3: 'LAGHOUAT', 4: 'OUMBOUAGHI', 5: 'BATNA',
         6: 'BEJAIA', 7: 'BISKRA', 8: 'BECHAR', 9: 'BLIDA', 10: 'BOUIRA',
-        11: 'TAMANRASSET', 12: 'TEBESSA', 13: 'TLEMCEN', 14: 'TIARET', 15: 'TIZIOUZOU',
+        11: 'TAMNGHASSET', 12: 'TEBESSA', 13: 'TLEMCEN', 14: 'TIARET', 15: 'TIZIOUZOU',
         16: 'ALGER', 17: 'DJELFA', 18: 'JIJEL', 19: 'SETIF', 20: 'SAIDA',
         21: 'SKIKDA', 22: 'SIDIBELABBES', 23: 'ANNABA', 24: 'GUELMA', 25: 'CONSTANTINE',
         26: 'MEDEA', 27: 'MOSTAGANEM', 28: 'MSILA', 29: 'MASCARA', 30: 'OUARGLA',
-        31: 'ORAN', 32: 'ELBAYADH', 33: 'ILLIZI', 34: 'BORDJBOUARRER', 35: 'BOUMERDES',
-        36: 'ELTARF', 37: 'TINDOUF', 38: 'TISSEMSILT', 39: 'ELOUED', 40: 'KHENCHELA',
+        31: 'ORAN', 32: 'ELBAYADH', 33: 'ILLIZI', 34: 'BORDJBOUARRERIDJ', 35: 'BOUMERDES',
+        36: 'ELTARF', 37: 'TINDOUF', 38: 'TISSEMSSILT', 39: 'ELOUED', 40: 'KHENCHELA',
         41: 'SOUKAHRAS', 42: 'TIPAZA', 43: 'MILA', 44: 'AINDEFLA', 45: 'NAAMA',
         46: 'AINTEMOUCHENT', 47: 'GHARDAIA', 48: 'RELIZANE'
     };
 
+    const communeManualOverrides = {
+        'BAINSROMAINS': 'HAMMAMET',
+        'BOLOGHINEIBNZIRI': 'BOLOGHINE',
+        'KHRAISSIA': 'KHRAICIA',
+        'TALKHEMT': 'TALAKHAMET',
+        'TICHI': 'TICHY',
+        'SOUKELHAD': 'SOUK EL HAD',
+        'OUELLAL': 'OUALEL',
+        'IGHRAM': 'IGHREM',
+        'KHANGATSIDINADJI': 'KHENGUET SIDI NADJI',
+    };
+
     const riskToVulnFactor = { 0.5: 0, 1: 0.12, 2: 0.20, 3: 0.25, 4: 0.3 };
 
+    // Helper functions
     const normalize = (str) => {
         if (!str) return "";
         return str.normalize("NFD")
@@ -41,7 +54,7 @@ const MapPage = () => {
     };
 
     const getRiskColor = (risk) => {
-        if (risk === undefined) return '#1e293b';
+        if (risk === undefined || risk === null) return '#334155';
         if (risk <= 0.5) return '#10b981';
         if (risk <= 1.0) return '#3b82f6';
         if (risk <= 2.0) return '#eab308';
@@ -51,7 +64,7 @@ const MapPage = () => {
 
     const getVulnColor = (vuln, capital) => {
         if (!capital || capital <= 0) return '#334155';
-        if (vuln === undefined) return '#1e293b';
+        if (vuln === undefined || vuln === null) return '#1e293b';
         if (vuln === 0) return '#10b981';
         if (vuln < 10000000) return '#3b82f6';
         if (vuln < 50000000) return '#eab308';
@@ -64,148 +77,175 @@ const MapPage = () => {
         return (num / 1000000).toFixed(1) + "M";
     };
 
+    // 1. Data Fetching Effect
     useEffect(() => {
+        const wilayaNameToId = {};
+        Object.entries(wilayaIdNames).forEach(([id, name]) => {
+            wilayaNameToId[name] = parseInt(id);
+        });
+
         Promise.all([
             fetch('/merged_willaya_data.csv').then(r => r.text()),
             fetch('/dza_admin2.geojson').then(r => r.json())
-        ]).then(([csvText, geoData]) => {
-            const csvRows = csvText.split('\n').filter(line => line.trim() !== '').slice(1);
-            const csvByWilayaId = {};
-            csvRows.forEach(row => {
-                const cols = row.split(',');
-                if (cols.length >= 7) {
-                    const wilayaId = parseInt(cols[1]);
-                    const communeName = cols[3]?.trim();
-                    const risk = parseFloat(cols[5]);
-                    const capital = parseFloat(cols[6] || 0);
-                    const vulnerability = capital * (riskToVulnFactor[risk] || 0);
-
-                    if (!csvByWilayaId[wilayaId]) csvByWilayaId[wilayaId] = [];
-                    csvByWilayaId[wilayaId].push({ name: communeName, risk, capital, vulnerability });
-                }
-            });
-
-            const geoByNormWilaya = {};
-            geoData.features.forEach(feature => {
-                const normWilaya = normalize(feature.properties?.adm1_name);
-                if (!geoByNormWilaya[normWilaya]) geoByNormWilaya[normWilaya] = [];
-                geoByNormWilaya[normWilaya].push(feature);
+        ]).then(([csvText, geoJson]) => {
+            const csvRows = csvText.split('\n').filter(l => l.trim() !== '').slice(1).map(line => {
+                const cols = line.split(',');
+                return {
+                    wilayaId: parseInt(cols[1]),
+                    communeName: cols[3]?.trim(),
+                    risk: parseFloat(cols[5]),
+                    capital: parseFloat(cols[6] || 0)
+                };
             });
 
             const newMapping = {};
-            for (let id = 1; id <= 48; id++) {
-                const targetNormName = wilayaIdNames[id];
-                const csvCommunes = csvByWilayaId[id];
-                const geoFeatures = geoByNormWilaya[targetNormName];
+            geoJson.features.forEach(feature => {
+                const props = feature.properties;
+                const nomWilaya = normalize(props.adm1_name);
+                const rawCommune = props.adm2_name;
+                const nomCommune = normalize(rawCommune);
+                const wId = wilayaNameToId[nomWilaya];
 
-                if (csvCommunes && geoFeatures) {
-                    const sortedCsv = [...csvCommunes].sort((a, b) => a.name.localeCompare(b.name));
-                    const sortedGeo = [...geoFeatures].sort((a, b) =>
-                        (a.properties.adm2_name || "").toUpperCase().localeCompare((b.properties.adm2_name || "").toUpperCase())
-                    );
+                if (!wId) return;
 
-                    const len = Math.min(sortedCsv.length, sortedGeo.length);
-                    for (let i = 0; i < len; i++) {
-                        const feature = sortedGeo[i];
-                        const csvData = sortedCsv[i];
-                        if (feature.properties?.adm2_pcode) {
-                            newMapping[feature.properties.adm2_pcode] = {
-                                risk: csvData.risk,
-                                capital: csvData.capital,
-                                vulnerability: csvData.vulnerability,
-                                csvName: csvData.name,
-                                geoName: feature.properties.adm2_name,
-                                wilayaId: id
-                            };
-                        }
+                const wilayaCommunes = csvRows.filter(r => r.wilayaId === wId);
+
+                // --- Robust Matching Algorithm ---
+                // 1. Exact Match
+                let match = wilayaCommunes.find(item => normalize(item.communeName) === nomCommune);
+
+                // 2. Manual Override Match
+                if (!match) {
+                    const overrideName = communeManualOverrides[nomCommune];
+                    if (overrideName) {
+                        match = wilayaCommunes.find(item => normalize(item.communeName) === normalize(overrideName));
                     }
                 }
-            }
+
+                // 3. Special case for Batna/Tlemcen typo
+                if (!match && wId === 5 && nomCommune === 'TLEMCEN') {
+                    match = wilayaCommunes.find(item => normalize(item.communeName) === 'TAXLENT');
+                }
+
+                // 4. Prefix-omitting Match (Standardize "EL", "AL", etc.)
+                if (!match) {
+                    const clean = (s) => s.replace(/^(EL|AL|LE|LA|L)/, "");
+                    const cleanNom = clean(nomCommune);
+                    match = wilayaCommunes.find(item => clean(normalize(item.communeName)) === cleanNom);
+                }
+
+                // 5. Fuzzy "Contains" Match (minimum 4 chars to avoid false positives)
+                if (!match && nomCommune.length > 4) {
+                    match = wilayaCommunes.find(item => {
+                        const nItem = normalize(item.communeName);
+                        return nItem.length > 4 && (nItem.includes(nomCommune) || nomCommune.includes(nItem));
+                    });
+                }
+
+                // 6. Global Fallback (Last resort: same name in any wilaya)
+                if (!match) {
+                    match = csvRows.find(item => normalize(item.communeName) === nomCommune);
+                }
+
+                if (match) {
+                    newMapping[props.adm2_pcode] = {
+                        ...match,
+                        geoName: props.adm2_name,
+                        vulnerability: match.capital * (riskToVulnFactor[match.risk] || 0)
+                    };
+                } else {
+                    // Default safe values so it's not "empty" on the map
+                    newMapping[props.adm2_pcode] = {
+                        wilayaId: wId,
+                        communeName: rawCommune,
+                        risk: null, // Clearly distinguish from Zone 0
+                        capital: 0,
+                        geoName: rawCommune,
+                        vulnerability: 0
+                    };
+                }
+            });
 
             setRiskMapping(newMapping);
+            setGeoData(geoJson);
             setIsLoaded(true);
-
-            if (mapRef.current && !mapInstanceRef.current) {
-                mapInstanceRef.current = L.map(mapRef.current).setView([28.0339, 1.6596], 5);
-                L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-                    attribution: '&copy; CartoDB'
-                }).addTo(mapInstanceRef.current);
-            }
-
-            if (mapInstanceRef.current) {
-                if (geoJsonLayerRef.current) mapInstanceRef.current.removeLayer(geoJsonLayerRef.current);
-
-                geoJsonLayerRef.current = L.geoJSON(geoData, {
-                    style: (feature) => {
-                        const data = newMapping[feature.properties?.adm2_pcode];
-                        return {
-                            fillColor: viewMode === 'risk'
-                                ? getRiskColor(data?.risk)
-                                : getVulnColor(data?.vulnerability, data?.capital),
-                            color: "#ffffff",
-                            weight: 0.2,
-                            opacity: 0.5,
-                            fillOpacity: 0.8
-                        };
-                    },
-                    onEachFeature: (feature, layer) => {
-                        const pcode = feature.properties?.adm2_pcode;
-                        const data = newMapping[pcode];
-                        const name = feature.properties?.adm2_name;
-                        const wilaya = feature.properties?.adm1_name;
-
-                        if (pcode) {
-                            layerMappingRef.current[pcode] = layer;
-                        }
-
-                        const popupContent = `
-                            <div class="p-4 min-w-[220px] bg-slate-900 text-white rounded-lg">
-                                <div class="font-black border-b border-white/10 pb-2 mb-3 text-emerald-400 uppercase tracking-tighter">${name}</div>
-                                <div class="space-y-3 text-xs">
-                                    <div class="flex justify-between items-center">
-                                        <span class="text-slate-500 font-bold">WILAYA:</span>
-                                        <span class="font-bold text-slate-300">${wilaya}</span>
-                                    </div>
-                                    <div class="flex justify-between items-center">
-                                        <span class="text-slate-500 font-bold">ZONE RISQUE:</span>
-                                        <span class="px-2 py-0.5 rounded bg-white/5 font-black" style="color: ${getRiskColor(data?.risk)}">
-                                            ZONE ${data?.risk || '0'}
-                                        </span>
-                                    </div>
-                                    <div class="flex justify-between items-center">
-                                        <span class="text-slate-500 font-bold">PORTEFEUILLE:</span>
-                                        <span class="font-black ${data?.capital > 0 ? 'text-blue-400' : 'text-slate-600'}">
-                                            ${formatMillion(data?.capital)} DZD
-                                        </span>
-                                    </div>
-                                    ${data?.capital > 0 ? `
-                                    <div class="bg-emerald-500/10 p-2 rounded-xl border border-emerald-500/20 mt-4">
-                                        <div class="flex justify-between items-center">
-                                            <span class="text-emerald-400 font-black text-[10px]">INDICE EXPOSITION:</span>
-                                            <span class="font-black text-emerald-300 text-sm">${formatMillion(data?.vulnerability)} DZD</span>
-                                        </div>
-                                    </div>
-                                    ` : `
-                                    <div class="bg-slate-800/50 p-2 rounded-xl border border-white/5 mt-4 text-center">
-                                        <span class="text-slate-500 font-bold text-[10px]">AUCUN CONTRAT ACTIF</span>
-                                    </div>
-                                    `}
-                                </div>
-                            </div>
-                        `;
-                        layer.bindPopup(popupContent, { className: 'custom-popup', maxWidth: 300 });
-                        layer.on('mouseover', (e) => {
-                            e.target.setStyle({ weight: 1.5, fillOpacity: 1, color: '#10b981' });
-                            e.target.bringToFront();
-                        });
-                        layer.on('mouseout', (e) => {
-                            e.target.setStyle({ weight: 0.2, fillOpacity: 0.8, color: '#ffffff' });
-                        });
-                    }
-                }).addTo(mapInstanceRef.current);
-            }
         });
-    }, [viewMode]);
+    }, []);
+
+    // 2. Map Rendering Effect
+    useEffect(() => {
+        if (!geoData) return;
+
+        if (mapRef.current && !mapInstanceRef.current) {
+            mapInstanceRef.current = L.map(mapRef.current, {
+                zoomControl: false
+            }).setView([34.0339, 3.6596], 6);
+
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+                attribution: '&copy; CartoDB'
+            }).addTo(mapInstanceRef.current);
+
+            L.control.zoom({ position: 'bottomright' }).addTo(mapInstanceRef.current);
+        }
+
+        if (mapInstanceRef.current) {
+            if (geoJsonLayerRef.current) mapInstanceRef.current.removeLayer(geoJsonLayerRef.current);
+
+            geoJsonLayerRef.current = L.geoJSON(geoData, {
+                style: (feature) => {
+                    const data = riskMapping[feature.properties?.adm2_pcode];
+                    return {
+                        fillColor: viewMode === 'risk'
+                            ? getRiskColor(data?.risk)
+                            : getVulnColor(data?.vulnerability, data?.capital),
+                        color: "#ffffff",
+                        weight: 0.1,
+                        opacity: 0.3,
+                        fillOpacity: 0.8
+                    };
+                },
+                onEachFeature: (feature, layer) => {
+                    const pcode = feature.properties?.adm2_pcode;
+                    const data = riskMapping[pcode];
+                    const name = feature.properties?.adm2_name;
+                    const wilaya = feature.properties?.adm1_name;
+
+                    if (pcode) {
+                        layerMappingRef.current[pcode] = layer;
+                    }
+
+                    const popupContent = `
+                        <div style="padding: 12px; min-width: 200px; font-family: sans-serif;">
+                            <b style="color: #10b981; font-size: 14px; text-transform: uppercase;">${name}</b><br/>
+                            <small style="color: #94a3b8;">WILAYA: ${wilaya}</small>
+                            <hr style="border: none; border-top: 1px solid #334155; margin: 8px 0;"/>
+                            <div style="display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 4px;">
+                                <span style="color: #94a3b8;">ZONE RISQUE:</span>
+                                <b style="color: ${getRiskColor(data?.risk)}">ZONE ${data?.risk || '0'}</b>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 4px;">
+                                <span style="color: #94a3b8;">VALEUR ASSURÉE:</span>
+                                <b style="color: #3b82f6;">${formatMillion(data?.capital)} DZD</b>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; font-size: 11px; margin-top: 8px; padding-top: 4px; border-top: 1px dashed #334155;">
+                                <span style="color: #94a3b8;">EXPOSITION:</span>
+                                <b style="color: #10b981;">${formatMillion(data?.vulnerability)} DZD</b>
+                            </div>
+                        </div>
+                    `;
+                    layer.bindPopup(popupContent, { className: 'custom-popup' });
+
+                    layer.on('mouseover', (e) => {
+                        e.target.setStyle({ weight: 1.5, fillOpacity: 0.9, color: '#10b981' });
+                        e.target.bringToFront();
+                    });
+                    layer.on('mouseout', (e) => {
+                        e.target.setStyle({ weight: 0.1, fillOpacity: 0.8, color: '#ffffff' });
+                    });
+                }
+            }).addTo(mapInstanceRef.current);
+        }
+    }, [geoData, riskMapping, viewMode]);
 
     const handleSearch = (e) => {
         const val = e.target.value;
@@ -233,55 +273,53 @@ const MapPage = () => {
 
     return (
         <div className="flex flex-col h-screen bg-black overflow-hidden text-white font-sans">
-            <header className="h-20 bg-slate-900/90 backdrop-blur-3xl border-b border-white/5 flex justify-between items-center px-10 z-50">
+            <header className="h-20 bg-slate-900/90 backdrop-blur-3xl border-b border-white/5 flex justify-between items-center px-10 z-[1000] fixed w-full">
                 <div className="flex items-center gap-8">
                     <div className="flex bg-black/40 p-1.5 rounded-2xl border border-white/5 relative shadow-2xl backdrop-blur-xl">
                         <button
                             onClick={() => setViewMode('risk')}
-                            className={`px-8 py-2.5 rounded-xl text-[10px] font-black tracking-widest transition-all z-10 ${viewMode === 'risk' ? 'text-white' : 'text-slate-600 hover:text-slate-400'}`}
+                            className={`px-6 py-2.5 rounded-xl text-sm font-black transition-all duration-500 flex items-center gap-3 ${viewMode === 'risk' ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20' : 'text-slate-500 hover:text-slate-300'
+                                }`}
                         >
-                            RISQUE GÉOGRAPHIQUE
+                            <span className={`w-2 h-2 rounded-full ${viewMode === 'risk' ? 'bg-white animate-pulse' : 'bg-slate-600'}`}></span>
+                            RISQUE SÉISMIQUE
                         </button>
                         <button
-                            onClick={() => setViewMode('vulnerability')}
-                            className={`px-8 py-2.5 rounded-xl text-[10px] font-black tracking-widest transition-all z-10 ${viewMode === 'vulnerability' ? 'text-white' : 'text-slate-600 hover:text-slate-400'}`}
+                            onClick={() => setViewMode('vuln')}
+                            className={`px-6 py-2.5 rounded-xl text-sm font-black transition-all duration-500 flex items-center gap-3 ${viewMode === 'vuln' ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' : 'text-slate-500 hover:text-slate-300'
+                                }`}
                         >
-                            INDICE D'EXPOSITION
+                            <span className={`w-2 h-2 rounded-full ${viewMode === 'vuln' ? 'bg-white animate-pulse' : 'bg-slate-600'}`}></span>
+                            INDICE VULNÉRABILITÉ
                         </button>
-                        <div
-                            className="absolute bg-emerald-600 top-1.5 bottom-1.5 rounded-xl transition-all duration-500 ease-out shadow-[0_0_20px_rgba(16,185,129,0.5)]"
-                            style={{
-                                width: 'calc(50% - 6px)',
-                                left: viewMode === 'risk' ? '6px' : 'calc(50%)'
-                            }}
-                        ></div>
                     </div>
                 </div>
 
                 <div className="relative w-96 group">
-                    <div className="flex items-center bg-black/40 border border-white/10 rounded-2xl px-4 py-2 focus-within:border-emerald-500 transition-all">
-                        <span className="text-slate-500 mr-2 uppercase text-[10px] font-black">Recherche</span>
+                    <div className="absolute inset-0 bg-emerald-500/20 blur-2xl group-hover:bg-emerald-500/30 transition-all duration-700 opacity-0 group-hover:opacity-100"></div>
+                    <div className="relative bg-black/40 border border-white/10 rounded-2xl flex items-center px-5 h-12 group-hover:border-emerald-500/50 transition-all duration-500 backdrop-blur-3xl shadow-inner">
                         <input
                             type="text"
-                            className="bg-transparent border-none text-white text-sm focus:outline-none w-full font-bold placeholder:text-slate-700"
-                            placeholder="Entrez le nom d'une commune..."
+                            placeholder="Rechercher une commune..."
                             value={mapSearchTerm}
                             onChange={handleSearch}
+                            className="bg-transparent border-none outline-none text-sm w-full placeholder:text-slate-600 font-medium"
                         />
-                        <span className="text-slate-600">🔍</span>
+                        <svg className="w-5 h-5 text-slate-500 group-hover:text-emerald-400 transition-colors duration-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                        </svg>
                     </div>
+
                     {searchResults.length > 0 && (
-                        <div className="absolute top-full left-0 right-0 mt-2 bg-slate-900/95 backdrop-blur-xl border border-white/10 rounded-2xl overflow-hidden shadow-2xl z-50 max-h-80 overflow-y-auto custom-scrollbar">
+                        <div className="absolute top-14 left-0 w-full bg-slate-900/95 backdrop-blur-3xl border border-white/10 rounded-2xl shadow-2xl overflow-hidden py-3 animate-in fade-in slide-in-from-top-4 duration-500 z-[1001]">
                             {searchResults.map((res) => (
                                 <button
                                     key={res.pcode}
-                                    className="w-full text-left p-4 hover:bg-emerald-500/10 border-b border-white/5 transition-colors group"
                                     onClick={() => zoomToCommune(res.pcode)}
+                                    className="w-full px-6 py-3.5 hover:bg-emerald-500/10 flex flex-col items-start transition-all duration-300 border-l-4 border-transparent hover:border-emerald-500"
                                 >
-                                    <div className="text-sm font-black text-white group-hover:text-emerald-400">{res.geoName}</div>
-                                    <div className="text-[9px] text-slate-500 font-bold uppercase tracking-widest mt-1">
-                                        Wilaya ID: {res.wilayaId} • Zone: {res.risk}
-                                    </div>
+                                    <span className="font-black text-sm uppercase tracking-tighter">{res.geoName}</span>
+                                    <span className="text-[10px] text-slate-500 font-bold mt-1">WILAYA ${res.wilayaId} • ZONE ${res.risk}</span>
                                 </button>
                             ))}
                         </div>
@@ -289,69 +327,45 @@ const MapPage = () => {
                 </div>
             </header>
 
-            <main className="flex-1 relative bg-slate-950">
-                {!isLoaded && (
-                    <div className="absolute inset-0 z-2000 bg-black flex flex-col items-center justify-center gap-8">
-                        <div className="relative">
-                            <div className="w-32 h-32 border-[6px] border-emerald-500/5 rounded-full"></div>
-                            <div className="w-32 h-32 border-[6px] border-emerald-500 border-t-transparent rounded-full animate-spin absolute top-0 left-0 shadow-[0_0_40px_rgba(16,185,129,0.2)]"></div>
+            <main className="flex-1 relative flex">
+                <div ref={mapRef} className="absolute inset-0 z-0 bg-slate-950" />
+
+                {/* Legend Overlay */}
+                <div className="absolute bottom-10 left-10 z-50 pointer-events-none">
+                    <div className="bg-slate-900/90 backdrop-blur-2xl p-6 rounded-3xl border border-white/5 shadow-2xl space-y-5">
+                        <div className="flex flex-col gap-1">
+                            <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest leading-none">Légende Interactive</span>
+                            <h3 className="text-sm font-black text-white">{viewMode === 'risk' ? 'Zones Sismiques (RPA)' : 'Exposition Capital'}</h3>
                         </div>
-                        <div className="text-center">
-                            <div className="text-emerald-500 font-black text-sm tracking-[0.5em] mb-2 uppercase">Synchronisation du réseau</div>
-                            <div className="text-slate-600 text-[10px] font-bold uppercase tracking-widest">Validation de 1 541 Communes...</div>
-                        </div>
-                    </div>
-                )}
-                <div id="map" ref={mapRef} className="absolute inset-0 z-0 grayscale-[0.2] brightness-[0.8]"></div>
-
-                <div className="absolute bottom-12 right-12 z-1000 bg-slate-900/80 backdrop-blur-3xl p-8 rounded-[2.5rem] border border-white/10 shadow-2xl w-80">
-                    <div className="flex items-center justify-between mb-8">
-                        <h4 className="text-[10px] font-black uppercase tracking-[0.4em] text-emerald-400 italic">Données Spectrales</h4>
-                        <div className="px-2 py-1 rounded bg-emerald-500/10 border border-emerald-500/20 text-[8px] font-black text-emerald-500 animate-pulse">DIRECT</div>
-                    </div>
-
-                    <div className="space-y-4">
-                        {(viewMode === 'risk' ? [
-                            { l: 'Critique / Zone 3', c: '#ef4444', v: 'Sévère' },
-                            { l: 'Majeur / Zone 2b', c: '#f97316', v: 'Élevé' },
-                            { l: 'Modéré / Zone 2a', c: '#eab308', v: 'Moyen' },
-                            { l: 'Mineur / Zone 1', c: '#3b82f6', v: 'Faible' },
-                            { l: 'Base / Zone 0', c: '#10b981', v: 'Sûr' }
-                        ] : [
-                            { l: 'Ultra Élevé', c: '#ef4444', v: '> 200M' },
-                            { l: 'Élevé', c: '#f97316', v: '50-200M' },
-                            { l: 'Nominal', c: '#eab308', v: '10-50M' },
-                            { l: 'Minimal', c: '#3b82f6', v: '< 10M' },
-                            { l: 'Aucune Exposition', c: '#10b981', v: '0.0' }
-                        ]).map((item, idx) => (
-                            <div key={idx} className="flex items-center justify-between group">
-                                <div className="flex items-center gap-4">
-                                    <div className="w-1 h-6 rounded-full transition-all group-hover:w-3" style={{ backgroundColor: item.c }}></div>
-                                    <span className="text-[11px] font-black text-slate-400 group-hover:text-white transition-colors">{item.l}</span>
+                        <div className="space-y-3">
+                            {[
+                                { label: viewMode === 'risk' ? 'Zone 3 (Haut)' : '> 200M DZD', color: '#ef4444' },
+                                { label: viewMode === 'risk' ? 'Zone 2b' : '50M - 200M', color: '#f97316' },
+                                { label: viewMode === 'risk' ? 'Zone 2a' : '10M - 50M', color: '#eab308' },
+                                { label: viewMode === 'risk' ? 'Zone 1' : '< 10M DZD', color: '#3b82f6' },
+                                { label: viewMode === 'risk' ? 'Zone 0 (Nul)' : 'Exposition Nulle', color: '#10b981' },
+                                { label: 'Données non disponibles', color: '#334155' }
+                            ].map((item) => (
+                                <div key={item.label} className="flex items-center gap-4">
+                                    <div className="w-4 h-4 rounded-lg shadow-inner ring-1 ring-white/10" style={{ backgroundColor: item.color }}></div>
+                                    <span className="text-[11px] font-bold text-slate-300">{item.label}</span>
                                 </div>
-                                <span className="text-[9px] font-black text-slate-600 font-mono italic">{item.v}</span>
-                            </div>
-                        ))}
-
-                        {viewMode === 'vulnerability' && (
-                            <div className="pt-4 mt-4 border-t border-white/5 flex items-center justify-between group">
-                                <div className="flex items-center gap-4">
-                                    <div className="w-1 h-6 rounded-full bg-[#334155] group-hover:w-3 transition-all"></div>
-                                    <span className="text-[11px] font-black text-slate-500 group-hover:text-slate-300 transition-colors uppercase italic">Aucun Contrat Actif</span>
-                                </div>
-                                <span className="text-[9px] font-black text-slate-600 font-mono uppercase">Inactif</span>
-                            </div>
-                        )}
-                    </div>
-
-                    <div className="mt-8">
-                        <div className="text-[10px] text-slate-500 font-bold uppercase leading-relaxed border-l-2 border-emerald-500/30 pl-3">
-                            {viewMode === 'risk'
-                                ? "Affichage du zonage sismique brut couvrant TOUS les territoires administratifs."
-                                : "Affichage de la concentration du portefeuille : les zones sans contrats sont marquées neutres."}
+                            ))}
                         </div>
                     </div>
                 </div>
+
+                {!isLoaded && (
+                    <div className="absolute inset-0 z-[2000] bg-black flex items-center justify-center">
+                        <div className="flex flex-col items-center gap-6">
+                            <div className="w-16 h-16 border-4 border-emerald-500/20 border-t-emerald-500 rounded-full animate-spin"></div>
+                            <div className="flex flex-col items-center gap-2">
+                                <span className="text-sm font-black tracking-widest text-emerald-500 uppercase animate-pulse">Initialisation du Moteur Cartographique</span>
+                                <span className="text-[10px] text-slate-500 font-bold uppercase tracking-tighter">Synchronisation des données géospatiales...</span>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </main>
         </div>
     );

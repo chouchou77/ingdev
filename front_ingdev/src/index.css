@@ -15,7 +15,9 @@ body {
   color: #e2e8f0;
 }
 
-input, select, button {
+input,
+select,
+button {
   font-family: var(--font-sans);
 }
 

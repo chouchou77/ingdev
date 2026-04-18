@@ -5,11 +5,14 @@ import Map from './pages/Map'
 import Simulation from './pages/Simulation'
 import Prediction from './pages/Prediction'
 
+import Navbar from './components/Navbar'
+
 function App() {
 
   return (
     <>
       <Router>
+        <Navbar />
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/map" element={<Map />} />

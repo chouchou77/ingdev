@@ -200,19 +200,8 @@ const MapPage = () => {
     return (
         <div className="flex flex-col h-screen bg-black overflow-hidden text-white font-sans">
             <header className="h-20 bg-slate-900/90 backdrop-blur-3xl border-b border-white/5 flex justify-between items-center px-10 z-50">
-                <div className="flex items-center gap-5">
-                    <div className="w-12 h-12 bg-emerald-500/10 border border-emerald-500/30 rounded-2xl flex items-center justify-center text-2xl shadow-[0_0_30px_rgba(16,185,129,0.15)]">🌍</div>
-                    <div>
-                        <h1 className="text-2xl font-black tracking-tighter uppercase leading-none">Risk<span className="text-emerald-500">Core</span></h1>
-                        <p className="text-[9px] font-black text-slate-500 tracking-[0.3em] uppercase mt-1">Strategic Exposure Matrix</p>
-                    </div>
-                </div>
 
                 <div className="flex items-center gap-8">
-                    <Link to="/prediction" className="bg-blue-600/20 hover:bg-blue-600/40 text-blue-400 px-6 py-2 rounded-xl text-[10px] font-black transition-all border border-blue-500/30 flex items-center gap-3 group">
-                        <span className="group-hover:rotate-12 transition-transform">🔮</span>
-                        RUN PREDICTION
-                    </Link>
                     <div className="flex bg-black/40 p-1.5 rounded-2xl border border-white/5 relative shadow-2xl backdrop-blur-xl">
                         <button
                             onClick={() => setViewMode('risk')}
@@ -233,10 +222,6 @@ const MapPage = () => {
                                 left: viewMode === 'risk' ? '6px' : 'calc(50%)'
                             }}
                         ></div>
-                    </div>
-
-                    <div className="flex gap-4">
-                        <Link to="/" className="w-10 h-10 border border-white/10 rounded-xl flex items-center justify-center hover:bg-white/5 transition-all text-slate-400 hover:text-white">🏠</Link>
                     </div>
                 </div>
             </header>

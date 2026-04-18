@@ -1,14 +1,27 @@
-import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { useState, useEffect } from 'react';
 
 const Prediction = () => {
     const [formData, setFormData] = useState({
         wilaya: '',
         commune: '',
         buildingType: 'residential',
-        floors: '',
-        height: '',
-        capital: ''
+        floors: '2',
+        height: '6',
+        capital: '50000000',
+        // New RPA fields
+        seismic_zone: '2',
+        trumeau_area_m2: '15',
+        distance_between_columns_m: '4',
+        diagonal_wall_length: '3',
+        wall_thickness_cm: '25',
+        wall_density_ratio: '0.05',
+        openings_ratio: '0.3',
+        has_rc_encadrement: true,
+        brick_type: 'hollow',
+        longitudinal_reinforcement_bars: '4',
+        rebar_diameter_mm: '12',
+        mortar_strength_mpa: '5',
+        concrete_strength_mpa: '25',
     });
 
     const [wilayas, setWilayas] = useState([]);
@@ -16,6 +29,7 @@ const Prediction = () => {
     const [allData, setAllData] = useState([]);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [result, setResult] = useState(null);
+    const [activeTab, setActiveTab] = useState('basic');
 
     const wilayaIdNames = {
         1: 'Adrar', 2: 'Chlef', 3: 'Laghouat', 4: 'Oum El Bouaghi', 5: 'Batna',
@@ -42,11 +56,11 @@ const Prediction = () => {
                         w_id: wId,
                         wilaya: wilayaIdNames[wId] || `Wilaya ${wId}`,
                         commune: cols[3],
-                        risk_level: parseFloat(cols[5]) || 0.1
+                        risk_level: parseFloat(cols[5]) || 0.1,
+                        capital: parseFloat(cols[6]) || 0
                     };
                 });
                 setAllData(data);
-
                 const uniqueWilayas = [...new Set(data.map(d => d.wilaya))].sort();
                 setWilayas(uniqueWilayas);
             });
@@ -59,19 +73,30 @@ const Prediction = () => {
                 .map(d => d.commune)
                 .sort();
             setCommunes(filtered);
+
+            const communeData = allData.find(d => d.wilaya === formData.wilaya && d.commune === formData.commune);
+            if (communeData) {
+                // Refined Zone mapping from RPA Standards
+                const zone = communeData.risk_level >= 4 ? '3' :
+                    communeData.risk_level >= 2 ? '2' : '1';
+
+                setFormData(prev => ({
+                    ...prev,
+                    seismic_zone: zone,
+                    capital: communeData.capital > 0 ? communeData.capital.toString() : prev.capital
+                }));
+            }
         } else {
             setCommunes([]);
         }
-    }, [formData.wilaya, allData]);
+    }, [formData.wilaya, formData.commune, allData]);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         setIsSubmitting(true);
         setResult(null);
 
-        // Find the risk level for the selected commune
         const communeData = allData.find(d => d.wilaya === formData.wilaya && d.commune === formData.commune);
-        // Map 1-4 to 0.1-0.4 risk level
         const mappedRisk = communeData ? (communeData.risk_level === 0.5 ? 0.05 : communeData.risk_level * 0.1) : 0.2;
 
         const payload = {
@@ -82,22 +107,32 @@ const Prediction = () => {
             capital_assure: parseFloat(formData.capital),
             risk_level: mappedRisk,
             nb_floors: parseInt(formData.floors),
-            height_m: parseFloat(formData.height)
+            height_m: parseFloat(formData.height),
+            // New fields
+            seismic_zone: parseInt(formData.seismic_zone),
+            a_factor: mappedRisk,
+            trumeau_area_m2: parseFloat(formData.trumeau_area_m2),
+            distance_between_columns_m: parseFloat(formData.distance_between_columns_m),
+            diagonal_wall_length: parseFloat(formData.diagonal_wall_length),
+            wall_thickness_cm: parseFloat(formData.wall_thickness_cm),
+            wall_density_ratio: parseFloat(formData.wall_density_ratio),
+            openings_ratio: parseFloat(formData.openings_ratio),
+            has_rc_encadrement: formData.has_rc_encadrement,
+            brick_type: formData.brick_type,
+            longitudinal_reinforcement_bars: parseInt(formData.longitudinal_reinforcement_bars),
+            rebar_diameter_mm: parseFloat(formData.rebar_diameter_mm),
+            mortar_strength_mpa: parseFloat(formData.mortar_strength_mpa),
+            concrete_strength_mpa: parseFloat(formData.concrete_strength_mpa),
         };
 
         try {
             const response = await fetch('http://localhost:8000/analyze_risk', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload),
             });
 
-            if (!response.ok) {
-                throw new Error('API request failed');
-            }
-
+            if (!response.ok) throw new Error('API request failed');
             const data = await response.json();
 
             setResult({
@@ -106,194 +141,195 @@ const Prediction = () => {
                 decision: data.ai_prediction.decision,
                 color: data.ai_prediction.color,
                 rpa: data.rpa_validation,
-                monteCarlo: data.monte_carlo_simulation,
+                monte_carlo: data.monte_carlo_simulation,
+                portfolio: data.portfolio_impact,
                 recommendation: data.final_recommendation
             });
             setIsSubmitting(false);
         } catch (error) {
             console.error("Prediction failed:", error);
             setIsSubmitting(false);
-            alert("فشل في الاتصال بسيرفر التحليلات. تأكد من تشغيل backend/main.py");
+            alert("Connection error with backend.");
         }
     };
 
+    const InputField = ({ label, name, type = "text", options = null }) => (
+        <div className="space-y-1.5">
+            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">{label}</label>
+            {options ? (
+                <select
+                    className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-emerald-500/50 transition-all appearance-none"
+                    value={formData[name]}
+                    onChange={(e) => setFormData({ ...formData, [name]: e.target.value })}
+                >
+                    {options.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+                </select>
+            ) : (
+                <input
+                    type={type}
+                    className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-emerald-500/50 transition-all"
+                    value={formData[name]}
+                    onChange={(e) => setFormData({ ...formData, [name]: e.target.value })}
+                />
+            )}
+        </div>
+    );
+
     return (
         <div className="min-h-screen bg-[#0a0a0c] text-slate-300 font-sans selection:bg-emerald-500/30">
-            <header className="h-20 border-b border-white/5 bg-black/20 backdrop-blur-xl flex items-center justify-between px-8 sticky top-0 z-50">
-                <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 bg-emerald-500 rounded-xl flex items-center justify-center text-white text-xl">🔮</div>
-                    <div>
-                        <h1 className="text-xl font-black text-white tracking-tight uppercase">Risk<span className="text-emerald-500">Forecaster</span></h1>
-                        <p className="text-[10px] font-bold text-slate-500 tracking-[0.2em] uppercase">Advanced Prediction Engine</p>
-                    </div>
-                </div>
-                <Link to="/map" className="bg-slate-800/50 hover:bg-slate-700/50 px-6 py-2.5 rounded-xl text-xs font-black transition-all border border-white/5 text-slate-100 flex items-center gap-2">
-                    ⬅ BACK TO MAP
-                </Link>
-            </header>
+            <main className="max-w-6xl mx-auto py-12 px-6">
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
 
-            <main className="max-w-4xl mx-auto py-16 px-6">
-                <div className="bg-slate-900/40 border border-white/5 rounded-[2.5rem] overflow-hidden shadow-2xl backdrop-blur-md">
-                    <div className="grid grid-cols-1 md:grid-cols-2">
-                        <div className="p-12 bg-linear-to-br from-slate-900 to-black border-r border-white/5">
-                            <h2 className="text-3xl font-black text-white mb-6 leading-tight">Predict Asset <br /><span className="text-emerald-500 font-normal italic">Vulnerability</span></h2>
-                            <p className="text-slate-400 text-sm leading-relaxed mb-8">
-                                Input the asset parameters to calculate its seismic performance score and potential financial exposure index.
-                            </p>
+                    {/* LEFT PANEL: FORM */}
+                    <div className="lg:col-span-7 bg-slate-900/40 border border-white/5 rounded-[2.5rem] overflow-hidden backdrop-blur-md flex flex-col">
+                        <div className="p-8 border-b border-white/5 bg-linear-to-r from-slate-900 to-black">
+                            <h2 className="text-2xl font-black text-white flex items-center gap-3">
+                                <span className="text-emerald-500">⚙️</span> ADVANCED RISK ASSESSMENT
+                            </h2>
+                            <p className="text-slate-400 text-xs mt-2 uppercase tracking-widest font-bold opacity-60">RPA 99/2003 Confined Masonry Framework</p>
+                        </div>
 
-                            <div className="space-y-6">
-                                <div className="flex gap-4">
-                                    <div className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-emerald-400">01</div>
-                                    <div>
-                                        <p className="text-xs font-black text-white uppercase mb-1">Geographic Context</p>
-                                        <p className="text-slate-500 text-[11px]">Region-specific hazard coefficients.</p>
+                        <div className="flex border-b border-white/5 bg-black/20">
+                            <button onClick={() => setActiveTab('basic')} className={`px-8 py-4 text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'basic' ? 'text-emerald-400 border-b-2 border-emerald-500 bg-emerald-500/5' : 'text-slate-500 hover:text-slate-300'}`}>Basic Data</button>
+                            <button onClick={() => setActiveTab('structural')} className={`px-8 py-4 text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'structural' ? 'text-emerald-400 border-b-2 border-emerald-500 bg-emerald-500/5' : 'text-slate-500 hover:text-slate-300'}`}>Structural Specs</button>
+                            <button onClick={() => setActiveTab('materials')} className={`px-8 py-4 text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'materials' ? 'text-emerald-400 border-b-2 border-emerald-500 bg-emerald-500/5' : 'text-slate-500 hover:text-slate-300'}`}>Materials & Rebar</button>
+                        </div>
+
+                        <form onSubmit={handleSubmit} className="p-8 flex-1 overflow-y-auto max-h-[600px] custom-scrollbar">
+                            {activeTab === 'basic' && (
+                                <div className="grid grid-cols-2 gap-6 animate-in fade-in duration-300">
+                                    <div className="col-span-2 md:col-span-1">
+                                        <InputField label="Wilaya" name="wilaya" options={[{ value: '', label: 'Select Wilaya' }, ...wilayas.map(w => ({ value: w, label: w }))]} />
+                                    </div>
+                                    <div className="col-span-2 md:col-span-1">
+                                        <InputField label="Commune" name="commune" options={[{ value: '', label: 'Select Commune' }, ...communes.map(c => ({ value: c, label: c }))]} />
+                                    </div>
+                                    <InputField label="Building Category" name="buildingType" options={[
+                                        { value: 'residential', label: 'Habitation / Units' },
+                                        { value: 'industrial', label: 'Industrial Complex' },
+                                        { value: 'office', label: 'Commercial / Office' }
+                                    ]} />
+                                    <InputField label="Seismic Zone (RPA)" name="seismic_zone" options={[
+                                        { value: '1', label: 'Zone I (Low)' },
+                                        { value: '2', label: 'Zone II (Medium)' },
+                                        { value: '3', label: 'Zone III (High)' }
+                                    ]} />
+                                    <InputField label="Number of Floors" name="floors" type="number" />
+                                    <InputField label="Total Height (m)" name="height" type="number" />
+                                    <div className="col-span-2">
+                                        <InputField label="Capital Assured (DZD)" name="capital" type="number" />
                                     </div>
                                 </div>
-                                <div className="flex gap-4">
-                                    <div className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-emerald-400">02</div>
-                                    <div>
-                                        <p className="text-xs font-black text-white uppercase mb-1">Structural Inputs</p>
-                                        <p className="text-slate-500 text-[11px]">Physical building attributes.</p>
-                                    </div>
-                                </div>
-                            </div>
+                            )}
 
-                            {result && (
-                                <div className="mt-12 p-8 rounded-4xl bg-slate-800/40 border border-white/10 animate-in zoom-in duration-500">
-                                    <p className="text-[10px] font-black text-emerald-500 uppercase tracking-[0.3em] mb-4">Detailed Assessment Result</p>
-
-                                    <div className="grid grid-cols-1 gap-6">
-                                        {/* Main Score & Decision */}
-                                        <div className="flex justify-between items-start border-b border-white/5 pb-6">
-                                            <div>
-                                                <div className="flex items-center gap-2 mb-2 text-white font-bold text-sm">
-                                                    <span className="text-emerald-500">📍</span> {formData.wilaya} / {formData.commune}
-                                                </div>
-                                                <div className="text-4xl font-black" style={{ color: result.color }}>
-                                                    {result.decision}
-                                                </div>
-                                            </div>
-                                            <div className="text-right">
-                                                <div className="text-3xl font-black text-white">{result.score}</div>
-                                                <div className="text-[10px] font-bold text-slate-500 uppercase tracking-tighter">AI Risk Index</div>
-                                            </div>
-                                        </div>
-
-                                        {/* RPA & Simulation Data */}
-                                        <div className="grid grid-cols-2 gap-4">
-                                            <div className="bg-black/30 p-4 rounded-2xl border border-white/5">
-                                                <p className="text-[9px] font-black text-slate-500 uppercase mb-2">RPA Compliance</p>
-                                                <div className={`text-xs font-bold ${result.rpa.compliant ? 'text-emerald-400' : 'text-red-400'}`}>
-                                                    {result.rpa.compliant ? '✓ COMPLIANT' : '✗ NON-COMPLIANT'}
-                                                </div>
-                                                <p className="text-[10px] text-slate-500 mt-1">Limits: {result.rpa.zone_limit_floors} floors / {result.rpa.zone_limit_height}m</p>
-                                            </div>
-                                            <div className="bg-black/30 p-4 rounded-2xl border border-white/5">
-                                                <p className="text-[9px] font-black text-slate-500 uppercase mb-2">Simulated Loss (Avg)</p>
-                                                <div className="text-xs font-bold text-white">
-                                                    {result.monteCarlo.average_simulated_loss.toLocaleString()} DZD
-                                                </div>
-                                                <p className="text-[10px] text-slate-500 mt-1">Extreme (95%): {result.monteCarlo.extreme_scenario_95.toLocaleString()}</p>
-                                            </div>
-                                        </div>
-
-                                        {/* Recommendation */}
-                                        <div className="bg-emerald-500/5 border border-emerald-500/10 p-4 rounded-2xl">
-                                            <p className="text-[9px] font-black text-emerald-500 uppercase mb-1">Recommendation</p>
-                                            <p className="text-xs text-slate-300 leading-relaxed font-medium">
-                                                {result.recommendation}
-                                            </p>
+                            {activeTab === 'structural' && (
+                                <div className="grid grid-cols-2 gap-6 animate-in fade-in duration-300">
+                                    <InputField label="Trumeau Area (m²)" name="trumeau_area_m2" type="number" />
+                                    <InputField label="Distance between Columns (m)" name="distance_between_columns_m" type="number" />
+                                    <InputField label="Diagonal Wall Length (m)" name="diagonal_wall_length" type="number" />
+                                    <InputField label="Wall Thickness (cm)" name="wall_thickness_cm" type="number" />
+                                    <InputField label="Wall Density Ratio" name="wall_density_ratio" type="number" />
+                                    <InputField label="Openings Area Ratio" name="openings_ratio" type="number" />
+                                    <div className="col-span-2 flex items-center gap-4 bg-white/5 p-4 rounded-xl border border-white/10">
+                                        <input
+                                            type="checkbox"
+                                            checked={formData.has_rc_encadrement}
+                                            onChange={(e) => setFormData({ ...formData, has_rc_encadrement: e.target.checked })}
+                                            className="w-5 h-5 accent-emerald-500"
+                                        />
+                                        <div>
+                                            <p className="text-xs font-bold text-white">Has R.C Encadrement around openings?</p>
+                                            <p className="text-[10px] text-slate-500">Required for Zone III according to RPA Chapitre IX.</p>
                                         </div>
                                     </div>
                                 </div>
                             )}
-                        </div>
 
-                        <div className="p-12">
-                            <form onSubmit={handleSubmit} className="space-y-6">
-                                <div className="space-y-2">
-                                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Wilaya (Province)</label>
-                                    <select
-                                        required
-                                        className="w-full bg-black/40 border border-white/10 rounded-2xl p-4 text-sm text-white focus:outline-none focus:border-emerald-500/50 transition-all appearance-none"
-                                        value={formData.wilaya}
-                                        onChange={(e) => setFormData({ ...formData, wilaya: e.target.value })}
-                                    >
-                                        <option value="">Select Wilaya</option>
-                                        {wilayas.map(w => <option key={w} value={w}>{w}</option>)}
-                                    </select>
+                            {activeTab === 'materials' && (
+                                <div className="grid grid-cols-2 gap-6 animate-in fade-in duration-300">
+                                    <InputField label="Brick Type" name="brick_type" options={[
+                                        { value: 'hollow', label: 'Hollow Brick' },
+                                        { value: 'solid', label: 'Solid Brick' }
+                                    ]} />
+                                    <InputField label="Rebar Count (Longitudinal)" name="longitudinal_reinforcement_bars" type="number" />
+                                    <InputField label="Rebar Diameter (mm)" name="rebar_diameter_mm" type="number" />
+                                    <InputField label="Mortar Strength (MPa)" name="mortar_strength_mpa" type="number" />
+                                    <InputField label="Concrete Strength (MPa)" name="concrete_strength_mpa" type="number" />
                                 </div>
+                            )}
 
-                                <div className="space-y-2">
-                                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Commune (Municipality)</label>
-                                    <select
-                                        required
-                                        disabled={!formData.wilaya}
-                                        className="w-full bg-black/40 border border-white/10 rounded-2xl p-4 text-sm text-white focus:outline-none focus:border-emerald-500/50 transition-all appearance-none disabled:opacity-30 disabled:cursor-not-allowed"
-                                        value={formData.commune}
-                                        onChange={(e) => setFormData({ ...formData, commune: e.target.value })}
-                                    >
-                                        <option value="">Select Commune</option>
-                                        {communes.map(c => <option key={c} value={c}>{c}</option>)}
-                                    </select>
-                                </div>
+                            <button
+                                type="submit"
+                                disabled={isSubmitting}
+                                className="w-full mt-12 bg-emerald-600 hover:bg-emerald-500 text-white p-5 rounded-2xl font-black text-xs uppercase tracking-[0.2em] transition-all shadow-[0_0_40px_rgba(16,185,129,0.2)] disabled:bg-slate-800"
+                            >
+                                {isSubmitting ? 'CALCULATING ENGINE...' : 'GENERATE COMPREHENSIVE REPORT'}
+                            </button>
+                        </form>
+                    </div>
 
-                                <div className="space-y-2">
-                                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Building Type</label>
-                                    <select
-                                        className="w-full bg-black/40 border border-white/10 rounded-2xl p-4 text-sm text-white focus:outline-none focus:border-emerald-500/50 transition-all appearance-none"
-                                        value={formData.buildingType}
-                                        onChange={(e) => setFormData({ ...formData, buildingType: e.target.value })}
-                                    >
-                                        <option value="residential">Residential Unit</option>
-                                        <option value="industrial">Industrial Complex</option>
-                                        <option value="office">Office / Commercial</option>
-                                    </select>
-                                </div>
-
-                                <div className="grid grid-cols-2 gap-6">
-                                    <div className="space-y-2">
-                                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Floors</label>
-                                        <input
-                                            required
-                                            type="number"
-                                            className="w-full bg-black/40 border border-white/10 rounded-2xl p-4 text-sm text-white focus:outline-none focus:border-emerald-500/50 transition-all"
-                                            value={formData.floors}
-                                            onChange={(e) => setFormData({ ...formData, floors: e.target.value })}
-                                        />
+                    {/* RIGHT PANEL: RESULTS */}
+                    <div className="lg:col-span-5 space-y-6">
+                        {!result ? (
+                            <div className="h-full bg-slate-900/20 border border-white/5 border-dashed rounded-[2.5rem] flex flex-col items-center justify-center p-12 text-center opacity-40">
+                                <div className="text-6xl mb-6">📉</div>
+                                <h3 className="text-xl font-black text-white uppercase tracking-tighter">Waiting for Input</h3>
+                                <p className="text-sm text-slate-400 mt-2">Submit the form to generate AI-driven seismic vulnerability index and loss simulations.</p>
+                            </div>
+                        ) : (
+                            <div className="space-y-6 animate-in zoom-in-95 duration-500">
+                                {/* DECISION CARD */}
+                                <div className="bg-slate-900/60 border border-white/10 p-8 rounded-[2.5rem] shadow-2xl relative overflow-hidden">
+                                    <div className="flex justify-between items-start relative z-10">
+                                        <div>
+                                            <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Final Underwriting Decision</p>
+                                            <h2 className="text-4xl font-black" style={{ color: result.color }}>{result.decision}</h2>
+                                        </div>
+                                        <div className="text-right">
+                                            <div className="text-5xl font-black text-white">{result.score}</div>
+                                            <p className="text-[9px] font-black text-emerald-500 uppercase tracking-tighter">AI RISK INDEX</p>
+                                        </div>
                                     </div>
-                                    <div className="space-y-2">
-                                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Height (m)</label>
-                                        <input
-                                            required
-                                            type="number"
-                                            className="w-full bg-black/40 border border-white/10 rounded-2xl p-4 text-sm text-white focus:outline-none focus:border-emerald-500/50 transition-all"
-                                            value={formData.height}
-                                            onChange={(e) => setFormData({ ...formData, height: e.target.value })}
-                                        />
+                                    <div className="mt-8 p-4 rounded-2xl bg-white/5 border border-white/5">
+                                        <p className="text-[10px] text-slate-400 leading-relaxed font-medium">"{result.recommendation}"</p>
+                                    </div>
+                                    <div className="absolute top-0 right-0 p-8 opacity-5 pointer-events-none">
+                                        <span className="text-8xl">⚖️</span>
                                     </div>
                                 </div>
 
-                                <div className="space-y-2 pb-6">
-                                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Credit Capital (DZD)</label>
-                                    <input
-                                        required
-                                        type="number"
-                                        className="w-full bg-black/40 border border-white/10 rounded-2xl p-4 text-sm text-white font-mono focus:outline-none focus:border-emerald-500/50 transition-all"
-                                        value={formData.capital}
-                                        onChange={(e) => setFormData({ ...formData, capital: e.target.value })}
-                                    />
+                                {/* RPA VALIDATION */}
+                                <div className="bg-slate-900/40 border border-white/5 p-6 rounded-3xl">
+                                    <h4 className="text-[11px] font-black text-white uppercase tracking-widest mb-4 flex items-center justify-between">
+                                        RPA 99/2003 Compliance
+                                        <span className={`px-3 py-1 rounded-full text-[9px] border ${result.rpa.compliant ? 'bg-emerald-500/10 border-emerald-500/40 text-emerald-400' : 'bg-red-500/10 border-red-500/40 text-red-400'}`}>
+                                            {result.rpa.compliant ? 'PASSED' : 'FAILED'}
+                                        </span>
+                                    </h4>
+                                    <div className="space-y-3">
+                                        {result.rpa.major_violations.map((v, i) => (
+                                            <div key={i} className="flex gap-3 text-[11px] text-red-400 bg-red-500/5 p-3 rounded-xl border border-red-500/10">
+                                                <span>🚨</span> {v}
+                                            </div>
+                                        ))}
+                                        {result.rpa.compliant && (
+                                            <div className="text-[11px] text-emerald-400 bg-emerald-500/5 p-3 rounded-xl border border-emerald-500/10 flex gap-3">
+                                                <span>✅</span> All structural parameters are within RPA limits for Zone {formData.seismic_zone}.
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
 
-                                <button
-                                    type="submit"
-                                    disabled={isSubmitting}
-                                    className="w-full bg-emerald-600 hover:bg-emerald-500 text-white p-5 rounded-2xl font-black text-xs uppercase tracking-[0.2em] transition-all shadow-[0_0_40px_rgba(16,185,129,0.2)] disabled:bg-slate-800"
-                                >
-                                    {isSubmitting ? 'PROCESSING...' : 'RUN PREDICTION'}
-                                </button>
-                            </form>
-                        </div>
+                                {/* MONTE CARLO & PORTFOLIO */}
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="bg-slate-900/40 border border-white/5 p-5 rounded-3xl">
+                                        <p className="text-[9px] font-black text-slate-500 uppercase mb-3">Monte Carlo Mean Loss</p>
+                                        <div className="text-xl font-black text-white tracking-tighter">{result.monte_carlo?.average_simulated_loss?.toLocaleString()} <span className="text-[10px] font-normal text-slate-500">DZD</span></div>
+                                        <p className="text-[9px] text-slate-400 mt-2 uppercase">Extreme (95%): {result.monte_carlo?.extreme_scenario_95?.toLocaleString()}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 </div>
             </main>

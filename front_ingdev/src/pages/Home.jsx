@@ -128,26 +128,30 @@ const Home = () => {
   );
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-800 font-sans pb-12">
-      <div className="bg-linear-to-r from-slate-900 to-blue-900 text-white p-8 md:p-12 mb-8 shadow-2xl relative overflow-hidden">
-        <div className="absolute top-0 right-0 p-12 opacity-10 pointer-events-none">
-          <span className="text-[12rem] font-black">RPA</span>
+    <div className="min-h-screen bg-black text-slate-200 font-sans pb-12">
+      <div className="bg-linear-to-br from-slate-900 to-black text-white p-12 md:p-20 mb-8 relative overflow-hidden border-b border-white/5">
+        <div className="absolute top-0 right-0 p-12 opacity-5 pointer-events-none select-none">
+          <span className="text-[18rem] font-black leading-none">RPA</span>
         </div>
         <div className="max-w-7xl mx-auto relative z-10">
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-8">
-            <div>
-              <h1 className="text-3xl md:text-4xl font-black mb-3 tracking-tight">PORTFOLIO INTELLIGENCE <span className="text-blue-400">RPA99</span></h1>
-              <p className="text-slate-400 font-medium max-w-2xl leading-relaxed">
-                Strategic analysis of earthquake insurance exposure across Algeria. Leveraging technical seismic zones B.C 2.48 for risk aggregation and capital optimization.
+          <div className="flex flex-col md:flex-row justify-between items-end gap-8">
+            <div className="max-w-3xl">
+              <div className="flex items-center gap-3 mb-6">
+                <span className="px-3 py-1 bg-emerald-500/10 text-emerald-400 text-[10px] font-black rounded-full border border-emerald-500/20 uppercase tracking-widest">Live Portfolio Stats</span>
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+              </div>
+              <h1 className="text-5xl md:text-7xl font-black mb-6 tracking-tight leading-[0.9]">STRATEGIC <br /><span className="text-emerald-500">EXPOSURE</span> ANALYTICS</h1>
+              <p className="text-slate-400 font-medium text-lg leading-relaxed">
+                Real-time monitoring of insurance aggregation across Algerian seismic zones.
+                Integrating <span className="text-white font-bold">RPA 99/2003</span> technical standards with Monte Carlo catastrophe modeling.
               </p>
             </div>
-            <div className="flex gap-4">
-              <Link to="/map" className="bg-blue-600 hover:bg-blue-500 px-6 py-3 rounded-2xl font-bold transition-all shadow-lg flex items-center gap-2 border border-blue-400/30">
-                🗺️ INTERACTIVE MAP
-              </Link>
-              <Link to="/simulation" className="bg-emerald-600 hover:bg-emerald-500 px-6 py-3 rounded-2xl font-bold transition-all shadow-lg flex items-center gap-2 border border-emerald-400/30">
-                📊 SIMULATOR
-              </Link>
+            <div className="hidden lg:block">
+              <div className="bg-white/5 backdrop-blur-md border border-white/10 p-6 rounded-3xl">
+                <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Portfolio Health</p>
+                <div className="text-3xl font-black text-emerald-400">OPTIMIZED</div>
+                <div className="text-[9px] text-slate-500 mt-1 uppercase font-bold tracking-tighter">Updated: {new Date().toLocaleDateString()}</div>
+              </div>
             </div>
           </div>
         </div>

@@ -12,13 +12,17 @@ function App() {
   return (
     <>
       <Router>
-        <Navbar />
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/map" element={<Map />} />
-          <Route path="/simulation" element={<Simulation />} />
-          <Route path="/prediction" element={<Prediction />} />
-        </Routes>
+        <div className="flex min-h-screen bg-slate-50">
+          <Navbar />
+          <div className="flex-1 h-screen overflow-y-auto custom-scrollbar">
+            <Routes>
+              <Route path="/" element={<Home />} />
+              <Route path="/map" element={<Map />} />
+              <Route path="/simulation" element={<Simulation />} />
+              <Route path="/prediction" element={<Prediction />} />
+            </Routes>
+          </div>
+        </div>
       </Router>
     </>
   )

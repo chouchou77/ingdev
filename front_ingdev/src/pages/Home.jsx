@@ -127,33 +127,6 @@ const Home = () => {
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 font-sans pb-12">
-      <div className="bg-linear-to-br from-slate-50 to-white text-slate-900 p-12 md:p-20 mb-8 relative overflow-hidden border-b border-slate-200">
-        <div className="absolute top-0 right-0 p-12 opacity-5 pointer-events-none select-none">
-          <span className="text-[18rem] font-black leading-none">RPA</span>
-        </div>
-        <div className="max-w-7xl mx-auto relative z-10">
-          <div className="flex flex-col md:flex-row justify-between items-end gap-8">
-            <div className="max-w-3xl">
-              <div className="flex items-center gap-3 mb-6">
-                <span className="px-3 py-1 bg-emerald-500/10 text-emerald-400 text-[10px] font-black rounded-full border border-emerald-500/20 uppercase tracking-widest">Stats Portefeuille en Direct</span>
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-              </div>
-              <h1 className="text-5xl md:text-7xl font-black mb-6 tracking-tight leading-[0.9]">ANALYSE <br /><span className="text-emerald-500">STRATÉGIQUE</span> D'EXPOSITION</h1>
-              <p className="text-slate-600 font-medium text-lg leading-relaxed">
-                Surveillance en temps réel de l'agrégation d'assurance à travers les zones sismiques algériennes.
-                Intégration des normes <span className="text-slate-900 font-bold">RPA 99/2003</span> avec modélisation catastrophe Monte Carlo.
-              </p>
-            </div>
-            <div className="hidden lg:block">
-              <div className="bg-slate-100/50 backdrop-blur-md border border-slate-200 p-6 rounded-3xl">
-                <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Santé du Portefeuille</p>
-                <div className="text-3xl font-black text-emerald-600">OPTIMISÉ</div>
-                <div className="text-[9px] text-slate-500 mt-1 uppercase font-bold tracking-tighter">Mis à jour: {new Date().toLocaleDateString('fr-FR')}</div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
 
       <main className="max-w-7xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2 space-y-8">

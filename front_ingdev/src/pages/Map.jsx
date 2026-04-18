@@ -272,8 +272,8 @@ const MapPage = () => {
     };
 
     return (
-        <div className="flex flex-col h-screen bg-slate-50 overflow-hidden text-slate-900 font-sans">
-            <header className="h-20 bg-white/90 backdrop-blur-3xl border-b border-slate-200 flex justify-between items-center px-10 z-1000 fixed w-full">
+        <div className="flex flex-col h-full bg-slate-50 overflow-hidden text-slate-900 font-sans">
+            <header className="h-20 bg-white/90 backdrop-blur-3xl border-b border-slate-200 flex justify-between items-center px-10 z-[100] sticky top-0">
                 <div className="flex items-center gap-8">
                     <div className="flex bg-slate-100 p-1.5 rounded-2xl border border-slate-200 relative shadow-inner backdrop-blur-xl">
                         <button

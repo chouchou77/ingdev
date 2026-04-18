@@ -181,7 +181,7 @@ const MapPage = () => {
                 zoomControl: false
             }).setView([34.0339, 3.6596], 6);
 
-            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
                 attribution: '&copy; CartoDB'
             }).addTo(mapInstanceRef.current);
 
@@ -215,20 +215,20 @@ const MapPage = () => {
                     }
 
                     const popupContent = `
-                        <div style="padding: 12px; min-width: 200px; font-family: sans-serif;">
+                        <div style="padding: 12px; min-width: 200px; font-family: var(--font-sans);">
                             <b style="color: #10b981; font-size: 14px; text-transform: uppercase;">${name}</b><br/>
-                            <small style="color: #94a3b8;">WILAYA: ${wilaya}</small>
-                            <hr style="border: none; border-top: 1px solid #334155; margin: 8px 0;"/>
+                            <small style="color: #64748b;">WILAYA: ${wilaya}</small>
+                            <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 8px 0;"/>
                             <div style="display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 4px;">
-                                <span style="color: #94a3b8;">ZONE RISQUE:</span>
+                                <span style="color: #64748b;">ZONE RISQUE:</span>
                                 <b style="color: ${getRiskColor(data?.risk)}">ZONE ${data?.risk || '0'}</b>
                             </div>
                             <div style="display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 4px;">
-                                <span style="color: #94a3b8;">VALEUR ASSURÉE:</span>
+                                <span style="color: #64748b;">VALEUR ASSURÉE:</span>
                                 <b style="color: #3b82f6;">${formatMillion(data?.capital)} DZD</b>
                             </div>
-                            <div style="display: flex; justify-content: space-between; font-size: 11px; margin-top: 8px; padding-top: 4px; border-top: 1px dashed #334155;">
-                                <span style="color: #94a3b8;">EXPOSITION:</span>
+                            <div style="display: flex; justify-content: space-between; font-size: 11px; margin-top: 8px; padding-top: 4px; border-top: 1px dashed #e2e8f0;">
+                                <span style="color: #64748b;">EXPOSITION:</span>
                                 <b style="color: #10b981;">${formatMillion(data?.vulnerability)} DZD</b>
                             </div>
                         </div>
@@ -272,10 +272,10 @@ const MapPage = () => {
     };
 
     return (
-        <div className="flex flex-col h-screen bg-black overflow-hidden text-white font-sans">
-            <header className="h-20 bg-slate-900/90 backdrop-blur-3xl border-b border-white/5 flex justify-between items-center px-10 z-[1000] fixed w-full">
+        <div className="flex flex-col h-screen bg-slate-50 overflow-hidden text-slate-900 font-sans">
+            <header className="h-20 bg-white/90 backdrop-blur-3xl border-b border-slate-200 flex justify-between items-center px-10 z-1000 fixed w-full">
                 <div className="flex items-center gap-8">
-                    <div className="flex bg-black/40 p-1.5 rounded-2xl border border-white/5 relative shadow-2xl backdrop-blur-xl">
+                    <div className="flex bg-slate-100 p-1.5 rounded-2xl border border-slate-200 relative shadow-inner backdrop-blur-xl">
                         <button
                             onClick={() => setViewMode('risk')}
                             className={`px-6 py-2.5 rounded-xl text-sm font-black transition-all duration-500 flex items-center gap-3 ${viewMode === 'risk' ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20' : 'text-slate-500 hover:text-slate-300'
@@ -297,13 +297,13 @@ const MapPage = () => {
 
                 <div className="relative w-96 group">
                     <div className="absolute inset-0 bg-emerald-500/20 blur-2xl group-hover:bg-emerald-500/30 transition-all duration-700 opacity-0 group-hover:opacity-100"></div>
-                    <div className="relative bg-black/40 border border-white/10 rounded-2xl flex items-center px-5 h-12 group-hover:border-emerald-500/50 transition-all duration-500 backdrop-blur-3xl shadow-inner">
+                    <div className="relative bg-white border border-slate-200 rounded-2xl flex items-center px-5 h-12 group-hover:border-emerald-500/50 transition-all duration-500 backdrop-blur-3xl shadow-sm">
                         <input
                             type="text"
                             placeholder="Rechercher une commune..."
                             value={mapSearchTerm}
                             onChange={handleSearch}
-                            className="bg-transparent border-none outline-none text-sm w-full placeholder:text-slate-600 font-medium"
+                            className="bg-transparent border-none outline-none text-sm w-full placeholder:text-slate-400 font-medium text-slate-900"
                         />
                         <svg className="w-5 h-5 text-slate-500 group-hover:text-emerald-400 transition-colors duration-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -311,14 +311,14 @@ const MapPage = () => {
                     </div>
 
                     {searchResults.length > 0 && (
-                        <div className="absolute top-14 left-0 w-full bg-slate-900/95 backdrop-blur-3xl border border-white/10 rounded-2xl shadow-2xl overflow-hidden py-3 animate-in fade-in slide-in-from-top-4 duration-500 z-[1001]">
+                        <div className="absolute top-14 left-0 w-full bg-white backdrop-blur-3xl border border-slate-200 rounded-2xl shadow-2xl overflow-hidden py-3 animate-in fade-in slide-in-from-top-4 duration-500 z-1001">
                             {searchResults.map((res) => (
                                 <button
                                     key={res.pcode}
                                     onClick={() => zoomToCommune(res.pcode)}
                                     className="w-full px-6 py-3.5 hover:bg-emerald-500/10 flex flex-col items-start transition-all duration-300 border-l-4 border-transparent hover:border-emerald-500"
                                 >
-                                    <span className="font-black text-sm uppercase tracking-tighter">{res.geoName}</span>
+                                    <span className="font-black text-sm uppercase tracking-tighter text-slate-900">{res.geoName}</span>
                                     <span className="text-[10px] text-slate-500 font-bold mt-1">WILAYA ${res.wilayaId} • ZONE ${res.risk}</span>
                                 </button>
                             ))}
@@ -328,14 +328,14 @@ const MapPage = () => {
             </header>
 
             <main className="flex-1 relative flex">
-                <div ref={mapRef} className="absolute inset-0 z-0 bg-slate-950" />
+                <div ref={mapRef} className="absolute inset-0 z-0 bg-slate-100" />
 
                 {/* Legend Overlay */}
                 <div className="absolute bottom-10 left-10 z-50 pointer-events-none">
-                    <div className="bg-slate-900/90 backdrop-blur-2xl p-6 rounded-3xl border border-white/5 shadow-2xl space-y-5">
+                    <div className="bg-white/90 backdrop-blur-2xl p-6 rounded-3xl border border-slate-200 shadow-2xl space-y-5">
                         <div className="flex flex-col gap-1">
                             <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest leading-none">Légende Interactive</span>
-                            <h3 className="text-sm font-black text-white">{viewMode === 'risk' ? 'Zones Sismiques (RPA)' : 'Exposition Capital'}</h3>
+                            <h3 className="text-sm font-black text-slate-900">{viewMode === 'risk' ? 'Zones Sismiques (RPA)' : 'Exposition Capital'}</h3>
                         </div>
                         <div className="space-y-3">
                             {[
@@ -348,7 +348,7 @@ const MapPage = () => {
                             ].map((item) => (
                                 <div key={item.label} className="flex items-center gap-4">
                                     <div className="w-4 h-4 rounded-lg shadow-inner ring-1 ring-white/10" style={{ backgroundColor: item.color }}></div>
-                                    <span className="text-[11px] font-bold text-slate-300">{item.label}</span>
+                                    <span className="text-[11px] font-bold text-slate-600">{item.label}</span>
                                 </div>
                             ))}
                         </div>
@@ -356,7 +356,7 @@ const MapPage = () => {
                 </div>
 
                 {!isLoaded && (
-                    <div className="absolute inset-0 z-[2000] bg-black flex items-center justify-center">
+                    <div className="absolute inset-0 z-2000 bg-slate-50 flex items-center justify-center">
                         <div className="flex flex-col items-center gap-6">
                             <div className="w-16 h-16 border-4 border-emerald-500/20 border-t-emerald-500 rounded-full animate-spin"></div>
                             <div className="flex flex-col items-center gap-2">

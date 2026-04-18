@@ -120,14 +120,14 @@ const Home = () => {
   }, [data]);
 
   if (isLoading) return (
-    <div className="min-h-screen bg-black flex items-center justify-center">
+    <div className="min-h-screen bg-slate-50 flex items-center justify-center">
       <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600"></div>
     </div>
   );
 
   return (
-    <div className="min-h-screen bg-black text-slate-200 font-sans pb-12">
-      <div className="bg-linear-to-br from-slate-900 to-black text-white p-12 md:p-20 mb-8 relative overflow-hidden border-b border-white/5">
+    <div className="min-h-screen bg-slate-50 text-slate-900 font-sans pb-12">
+      <div className="bg-linear-to-br from-slate-50 to-white text-slate-900 p-12 md:p-20 mb-8 relative overflow-hidden border-b border-slate-200">
         <div className="absolute top-0 right-0 p-12 opacity-5 pointer-events-none select-none">
           <span className="text-[18rem] font-black leading-none">RPA</span>
         </div>
@@ -139,15 +139,15 @@ const Home = () => {
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
               </div>
               <h1 className="text-5xl md:text-7xl font-black mb-6 tracking-tight leading-[0.9]">ANALYSE <br /><span className="text-emerald-500">STRATÉGIQUE</span> D'EXPOSITION</h1>
-              <p className="text-slate-400 font-medium text-lg leading-relaxed">
+              <p className="text-slate-600 font-medium text-lg leading-relaxed">
                 Surveillance en temps réel de l'agrégation d'assurance à travers les zones sismiques algériennes.
-                Intégration des normes <span className="text-white font-bold">RPA 99/2003</span> avec modélisation catastrophe Monte Carlo.
+                Intégration des normes <span className="text-slate-900 font-bold">RPA 99/2003</span> avec modélisation catastrophe Monte Carlo.
               </p>
             </div>
             <div className="hidden lg:block">
-              <div className="bg-white/5 backdrop-blur-md border border-white/10 p-6 rounded-3xl">
+              <div className="bg-slate-100/50 backdrop-blur-md border border-slate-200 p-6 rounded-3xl">
                 <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Santé du Portefeuille</p>
-                <div className="text-3xl font-black text-emerald-400">OPTIMISÉ</div>
+                <div className="text-3xl font-black text-emerald-600">OPTIMISÉ</div>
                 <div className="text-[9px] text-slate-500 mt-1 uppercase font-bold tracking-tighter">Mis à jour: {new Date().toLocaleDateString('fr-FR')}</div>
               </div>
             </div>
@@ -159,7 +159,7 @@ const Home = () => {
         <div className="lg:col-span-2 space-y-8">
           <div className="bg-white p-8 rounded-3xl shadow-sm border border-slate-100">
             <div className="flex justify-between items-center mb-8">
-              <h2 className="text-xl font-black text-black uppercase tracking-tighter text-black">Capital Agrégé par Zone Sismique</h2>
+              <h2 className="text-xl font-black text-slate-900 uppercase tracking-tighter">Capital Agrégé par Zone Sismique</h2>
               <span className="px-3 py-1 bg-blue-50 text-blue-600 text-[10px] font-black rounded-full border border-blue-100 uppercase tracking-widest leading-none">Milliards DZD</span>
             </div>
             <div className="h-[400px]">
@@ -180,7 +180,7 @@ const Home = () => {
 
           <div className="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden">
             <div className="p-8 border-b border-slate-50 flex flex-col md:flex-row justify-between items-center gap-4">
-              <h2 className="text-xl font-black text-slate-900 uppercase tracking-tighter text-black">Tableau de bord des cumuls (Wilayas)</h2>
+              <h2 className="text-xl font-black text-slate-900 uppercase tracking-tighter">Tableau de bord des cumuls (Wilayas)</h2>
               <div className="relative w-full md:w-64">
                 <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-xs">🔍</span>
                 <input
@@ -222,18 +222,18 @@ const Home = () => {
         </div>
 
         <div className="space-y-8">
-          <div className="bg-slate-900 text-white p-8 rounded-[2.5rem] shadow-xl relative overflow-hidden group">
+          <div className="bg-white text-slate-900 p-8 rounded-[2.5rem] shadow-sm border border-slate-100 relative overflow-hidden group">
             <div className="relative z-10">
-              <p className="text-[10px] font-black text-blue-400 tracking-[0.3em] uppercase mb-4">Indice de Risque Portefeuille</p>
+              <p className="text-[10px] font-black text-blue-600 tracking-[0.3em] uppercase mb-4">Indice de Risque Portefeuille</p>
               <div className="text-6xl font-black mb-4 group-hover:scale-105 transition-transform">{recommendations.ratio}%</div>
-              <p className="text-xs text-slate-400 leading-relaxed font-medium">
+              <p className="text-xs text-slate-600 leading-relaxed font-medium">
                 Moyenne pondérée de l'exposition au capital à travers tous les niveaux de risque.
-                (Moyenne Actuelle: <span className="text-white">{recommendations.avgRisk}</span>)
+                (Moyenne Actuelle: <span className="text-slate-900 font-bold">{recommendations.avgRisk}</span>)
               </p>
               <div className="mt-6 flex gap-2">
                 {parseInt(recommendations.ratio) > 50 ?
-                  <span className="bg-red-500/20 text-red-400 px-3 py-1 rounded-full text-[9px] font-black border border-red-500/20">🚨 SUREXPOSÉ</span>
-                  : <span className="bg-emerald-500/20 text-emerald-400 px-3 py-1 rounded-full text-[9px] font-black border border-emerald-500/20">✅ SOUS CONTRÔLE</span>
+                  <span className="bg-red-50 text-red-600 px-3 py-1 rounded-full text-[9px] font-black border border-red-100">🚨 SUREXPOSÉ</span>
+                  : <span className="bg-emerald-50 text-emerald-600 px-3 py-1 rounded-full text-[9px] font-black border border-emerald-100">✅ SOUS CONTRÔLE</span>
                 }
               </div>
             </div>
@@ -263,14 +263,14 @@ const Home = () => {
             </div>
           </div>
 
-          <div className="bg-emerald-900 text-white p-8 rounded-[2.5rem] shadow-xl">
-            <h3 className="text-[10px] font-black text-emerald-400 uppercase tracking-widest mb-6">Opportunités d'Expansion</h3>
+          <div className="bg-white text-slate-900 p-8 rounded-[2.5rem] shadow-sm border border-slate-100">
+            <h3 className="text-[10px] font-black text-emerald-600 uppercase tracking-widest mb-6">Opportunités d'Expansion</h3>
             <div className="space-y-4">
               {recommendations.grow.map((comm, i) => (
-                <div key={i} className="flex justify-between items-center p-4 bg-white/5 rounded-2xl border border-white/10 hover:bg-white/10 transition-colors">
+                <div key={i} className="flex justify-between items-center p-4 bg-slate-50 rounded-2xl border border-slate-100 hover:bg-slate-100 transition-colors">
                   <div>
-                    <p className="text-sm font-black text-white">{comm.commune}</p>
-                    <p className="text-[9px] font-bold text-emerald-400 uppercase tracking-tighter">Secteur Sûr / Z{comm.risk}</p>
+                    <p className="text-sm font-black text-slate-900">{comm.commune}</p>
+                    <p className="text-[9px] font-bold text-emerald-600 uppercase tracking-tighter">Secteur Sûr / Z{comm.risk}</p>
                   </div>
                   <span className="text-lg">📈</span>
                 </div>

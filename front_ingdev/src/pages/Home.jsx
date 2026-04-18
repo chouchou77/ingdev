@@ -101,9 +101,15 @@ const Home = () => {
 
   // 3. Recommendations
   const recommendations = useMemo(() => {
-    const total = data.reduce((acc, curr) => acc + curr.capital, 0);
-    const highRiskTotal = Object.values(zoneStats).filter(z => z.label.includes('III') || z.label.includes('IIb')).reduce((acc, curr) => acc + curr.total, 0);
-    const highRiskRatio = total > 0 ? (highRiskTotal / total) * 100 : 0;
+    const totalCapital = data.reduce((acc, curr) => acc + curr.capital, 0);
+
+    // Calculate Weighted Average Risk Index
+    // Zones: 4.0, 3.0, 2.0, 1.0, 0.5
+    const weightedSum = data.reduce((acc, curr) => acc + (curr.capital * curr.risk), 0);
+    const weightedAvgRisk = totalCapital > 0 ? (weightedSum / totalCapital) : 0;
+
+    // Normalize to percentage (4.0 risk = 100%)
+    const globalExposureScore = (weightedAvgRisk / 4.0) * 100;
 
     const topHighRiskCommunes = [...data]
       .filter(d => d.risk >= 3 && d.capital > 0)
@@ -115,11 +121,12 @@ const Home = () => {
       .slice(0, 5);
 
     return {
-      ratio: highRiskRatio.toFixed(1),
+      ratio: globalExposureScore.toFixed(1),
+      avgRisk: weightedAvgRisk.toFixed(2),
       stop: topHighRiskCommunes,
       grow: safeOppCommunes
     };
-  }, [data, zoneStats]);
+  }, [data]);
 
   if (isLoading) return (
     <div className="min-h-screen bg-slate-50 flex items-center justify-center">
@@ -229,10 +236,11 @@ const Home = () => {
         <div className="space-y-8">
           <div className="bg-slate-900 text-white p-8 rounded-[2.5rem] shadow-xl relative overflow-hidden group">
             <div className="relative z-10">
-              <p className="text-[10px] font-black text-blue-400 tracking-[0.3em] uppercase mb-4">Risk Exposure Ratio</p>
+              <p className="text-[10px] font-black text-blue-400 tracking-[0.3em] uppercase mb-4">Portfolio Risk Index</p>
               <div className="text-6xl font-black mb-4 group-hover:scale-105 transition-transform">{recommendations.ratio}%</div>
               <p className="text-xs text-slate-400 leading-relaxed font-medium">
-                Percentage of portfolio capital located in High Hazard Zones (IIb & III).
+                Weighted average of capital exposure across all seismic risk levels.
+                (Current Avg: <span className="text-white">{recommendations.avgRisk}</span>)
               </p>
               <div className="mt-6 flex gap-2">
                 {parseInt(recommendations.ratio) > 50 ?
